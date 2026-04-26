@@ -1,0 +1,13 @@
+@import "tailwindcss";
+
+/*
+ * Design tokens will be defined here via @theme once
+ * DESIGN.md is established with /impeccable document.
+ *
+ * For now, Tailwind v4 defaults apply.
+ */
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}

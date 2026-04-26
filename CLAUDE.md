@@ -22,24 +22,24 @@ Read `SPEC.md` for the full technical specification.
 
 ```bash
 # Development
-npm install              # Install dependencies
-npm run dev              # Start dev server (Astro)
-npm run build            # Production build
-npm run preview          # Preview production build locally (wrangler)
+pnpm install             # Install dependencies
+pnpm dev                 # Start dev server (Astro)
+pnpm build               # Production build
+pnpm preview             # Preview production build locally (wrangler)
 
 # Cloudflare
-npx wrangler dev         # Run Worker locally
-npx wrangler deploy      # Deploy to production
-npx wrangler d1 execute  # Run D1 migrations
+pnpm exec wrangler dev         # Run Worker locally
+pnpm exec wrangler deploy      # Deploy to production
+pnpm exec wrangler d1 execute  # Run D1 migrations
 
 # Testing
-npm run test             # Run test suite
-npm run test:watch       # Watch mode
+pnpm test                # Run test suite
+pnpm test:watch          # Watch mode
 
 # Linting & Formatting
-npm run lint             # ESLint
-npm run format           # Prettier
-npm run check            # Svelte check (type checking)
+pnpm lint                # ESLint
+pnpm format              # Prettier
+pnpm check               # Svelte check (type checking)
 ```
 
 ## Git Conventions

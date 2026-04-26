@@ -1542,20 +1542,29 @@ reason about than raw HTML.
 
 ```
 BUILDER APP (SaaS editor)
-├─ Framework:     Astro + Svelte 5 (islands architecture)
-├─ UI Primitives: bits-ui (headless, accessible, Svelte 5 native)
-├─ Styling:       Tailwind CSS v4
+├─ Framework:     Astro 6 + Svelte 5 (islands architecture)
+├─ UI Primitives: bits-ui v2 (headless, accessible, Svelte 5 native)
+├─ Styling:       Tailwind CSS v4 (Vite plugin, CSS-based config)
+├─ Validation:    Zod v4 (manifest schemas, API boundaries, tool params)
 ├─ Auth:          WorkOS AuthKit (1M free MAU, Google OAuth)
 ├─ Payments:      Stripe (subscriptions + one-time)
 ├─ AI Gateway:    Cloudflare AI Gateway
 
 BACKEND (Cloudflare)
-├─ Compute:       Cloudflare Workers
+├─ Compute:       Cloudflare Workers (not Pages)
 ├─ State:         Durable Objects (per-session, SQLite backend)
-├─ Database:      D1 (relational data)
+├─ Database:      D1 (relational data) via Drizzle ORM
 ├─ Storage:       R2 (binary blobs, zero egress)
 ├─ Domains:       Cloudflare for SaaS (custom hostnames)
 ├─ Rate Limiting: Durable Objects (per-user)
+
+TOOLING
+├─ Package Mgr:   pnpm
+├─ Language:      TypeScript 5.9 (strict mode)
+├─ ORM:           Drizzle (sqlite dialect, D1 driver)
+├─ Testing:       Vitest
+├─ Formatting:    Prettier (astro + svelte + tailwind plugins)
+├─ Linting:       ESLint
 
 AI AGENT SYSTEM
 ├─ Pattern:       Multi-agent (driver + specialists, her-go inspired)

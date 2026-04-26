@@ -1,0 +1,26 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "portfolio-builder",
+  "compatibility_date": "2025-04-01",
+  "compatibility_flags": ["nodejs_compat"],
+
+  // D1 database binding
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "portfolio-builder-db",
+      "database_id": "local"
+    }
+  ],
+
+  // R2 bucket binding
+  "r2_buckets": [
+    {
+      "binding": "BUCKET",
+      "bucket_name": "portfolio-builder-assets"
+    }
+  ],
+
+  // AI Gateway (will configure when we set up the agent system)
+  // "ai": { "binding": "AI_GATEWAY" }
+}
