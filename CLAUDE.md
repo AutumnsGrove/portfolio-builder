@@ -93,6 +93,21 @@ The multi-agent system follows patterns from
 - Tools auto-register at startup (init pattern).
 - The turn tracker coordinates parallel agent phases.
 
+### Code Translates Data, Never Describes It
+
+This is the foundational architectural principle. **The manifest is the
+portfolio.** Components are renderers, not containers.
+
+- ALL content lives in a structured JSON manifest — never in component props,
+  template strings, or hardcoded in Svelte/Astro files.
+- Components read the manifest and render it. They hold zero content.
+- The AI editor modifies the manifest, not code.
+- A non-coder can open `manifest.json`, find any string, change it.
+- Version history = manifest snapshots. Import/export = copying JSON.
+
+If you're writing a component and the content is a string literal instead
+of a manifest reference, you're doing it wrong.
+
 ### Zone & Block Model
 
 - Zones are numbered, AI-addressable semantic regions.
@@ -102,10 +117,14 @@ The multi-agent system follows patterns from
 
 ### Output Quality
 
-- Output sites must be Astro SSG — zero JS unless an island requires it.
+- **Hosted sites** are SSR — Worker reads manifest from D1, Astro renders,
+  cached at edge with stale-while-revalidate.
+- **Exported sites** are SSG — manifest baked into static HTML at build time.
+- Both modes use the same components. Only the manifest source differs.
+- Zero JS unless an island requires it.
 - All output must meet WCAG 2.1 AA.
 - SEO metadata is auto-generated, never skipped.
-- The source manifest (`manifest.json`) must always be included in exports.
+- `manifest.json`, `llms.txt`, and `llms-full.txt` must always be included.
 
 ## File Structure (Planned)
 
@@ -144,6 +163,10 @@ portfolio-builder/
 
 - **Astro over SvelteKit** for output sites: portfolios are mostly static.
   Islands handle the few interactive pieces. Zero JS by default.
+- **SSR for hosted, SSG for exported**: same components, different manifest
+  source. Hosted sites use stale-while-revalidate caching for near-static speed.
+- **Manifest-driven architecture**: code translates data, never describes it.
+  All content lives in JSON manifests. Components are pure renderers.
 - **WorkOS over Clerk** for auth: 1M free MAU, native CF Workers support,
   no `node:async_hooks` issues.
 - **D1 over DO SQLite** for primary data: simpler to query, back up, and

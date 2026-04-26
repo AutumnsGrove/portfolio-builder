@@ -590,17 +590,117 @@ cards stored in D1:
 
 ## 9. Output Sites
 
-### 9.1 Framework
+### 9.1 Core Principle: Code Translates Data, Never Describes It
 
-Output portfolios are **Astro SSG** sites — fully static HTML/CSS/JS with
-Svelte 5 islands for interactive components. No server required. No
-runtime cost. Fastest possible load times.
+**The manifest is the portfolio.** Components are renderers, not
+containers. All content — every title, description, image path, tag, and
+link — lives in a structured JSON manifest. The Astro/Svelte components
+read the manifest and display it. They never hold content as source.
 
-### 9.2 What Ships
+**Why this matters:**
+- A non-coder can open `manifest.json`, find their project title, change
+  it, save. Done. No Svelte knowledge, no file hunting.
+- The AI editor modifies the manifest, not code. Clean separation.
+- Version history is manifest snapshots — trivially diffable.
+- Import/export is copying a JSON file.
+- The same manifest powers both hosted (SSR) and exported (SSG) sites.
+
+**The manifest is JSON internally.** Non-coders never need to touch it
+raw — the builder provides a clean, labeled web UI for editing. Power
+users who want to hand-edit JSON can.
+
+### 9.2 Two Rendering Modes
+
+| Mode | When | How |
+|------|------|-----|
+| **SSR (hosted sites)** | User's site is hosted by us (subdomain or custom domain) | Worker reads manifest from D1/R2 → Astro renders on request → cached at edge |
+| **SSG (exported sites)** | User downloads .zip or self-deploys | Manifest baked into static HTML at build time → no server needed |
+
+Both modes use the same Astro components and Svelte islands. The only
+difference is where the manifest comes from (D1 vs. baked-in).
+
+**Caching strategy for SSR (stale-while-revalidate):**
+- First request: render from manifest, cache at the edge
+- Subsequent requests: serve cached version immediately
+- When manifest changes (user publishes): revalidate in the background
+- Visitors always get near-static speed, edits propagate within seconds
+
+### 9.3 Manifest Structure
+
+```json
+{
+  "version": "1.0",
+  "site": {
+    "title": "Jane Doe — Software Engineer",
+    "description": "Full-stack developer specializing in...",
+    "slug": "janedoe",
+    "template": "developer",
+    "style_layer": "minimal"
+  },
+  "style": {
+    "fonts": { "heading": "Inter", "body": "Inter" },
+    "colors": { "primary": "#2563eb", "background": "#ffffff", "text": "#1f2937" },
+    "spacing": "comfortable",
+    "custom_css": ""
+  },
+  "zones": [
+    {
+      "id": 1,
+      "label": "Hero",
+      "order": 0,
+      "style_overrides": {},
+      "blocks": [
+        {
+          "id": "b1",
+          "type": "hero",
+          "size": "L",
+          "content": {
+            "heading": "Hi, I'm Jane",
+            "subheading": "I build tools for developers",
+            "image": "r2://uploads/janedoe/hero.jpg",
+            "cta": { "text": "See my work", "href": "#projects" }
+          }
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "label": "Projects",
+      "order": 1,
+      "blocks": [
+        {
+          "id": "b2",
+          "type": "project-card",
+          "size": "M",
+          "content": {
+            "title": "Lattice",
+            "description": "Monorepo framework powering grove.place",
+            "tech_stack": ["Svelte", "Cloudflare Workers"],
+            "links": { "repo": "https://github.com/...", "live": "https://..." },
+            "image": "r2://uploads/janedoe/lattice-thumb.png"
+          }
+        }
+      ]
+    }
+  ],
+  "meta": {
+    "og_image": "r2://assets/janedoe/og.png",
+    "keywords": ["software engineer", "full-stack", "cloudflare"],
+    "canonical": "https://janedoe.portfoliobuilder.com"
+  }
+}
+```
+
+Every field is a plain string, array, or nested object. No code, no
+markup, no framework syntax. A non-technical user can scan this and
+understand what maps to what — or better, use the web UI and never see
+it at all.
+
+### 9.4 What Ships (Exported)
 
 ```
 dist/
-├── index.html              # Main page
+├── index.html              # Rendered from manifest
 ├── assets/
 │   ├── style.[hash].css    # Tailwind (compiled + purged)
 │   ├── gallery.[hash].js   # Svelte island (photo gallery)
@@ -609,14 +709,12 @@ dist/
 ├── images/                 # Optimized user assets
 ├── sitemap.xml
 ├── robots.txt
-└── manifest.json           # Source manifest (for re-import)
+├── llms.txt                # AI-readable index
+├── llms-full.txt           # Full content dump for AI
+└── manifest.json           # Source manifest (for re-import + hand-editing)
 ```
 
-The `manifest.json` contains the full editor state (zones, blocks, styles,
-project cards, version history) so the site can be re-imported into the
-builder at any time.
-
-### 9.3 Interactive Islands
+### 9.5 Interactive Islands
 
 Only components that need JavaScript get hydrated:
 
