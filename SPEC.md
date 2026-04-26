@@ -169,32 +169,183 @@ auto-register at startup (init pattern from her-go). Both the Guide Agent
 and specialist agents share the same registry but have different active
 tool sets.
 
+Tool schemas below use `*` to mark required params. Everything else is
+optional with the noted defaults.
+
 **Guide Agent tools (sync):**
-- `add_block` — insert a block into a zone at a position
-- `move_block` — reorder or relocate a block between zones
-- `remove_block` — delete a block
-- `update_block` — change block content or properties
-- `change_style` — modify style layer or zone styling
-- `add_zone` — create a new zone
-- `suggest` — propose a change for user approval
-- `highlight` — draw overlay highlight on an element
-- `ask_user` — structured Q&A with multiple-choice options (see 4.6)
-- `search_templates` — find relevant templates/components
-- `trigger_explorer` — kick off a background Repo Explorer run
-- `trigger_import` — kick off a background HTML Import run
 
-**Repo Explorer tools:**
-- `read_readme` — fetch and parse README from a repo URL
-- `read_manifest` — parse package.json / Cargo.toml / pyproject.toml / etc.
-- `read_root_files` — scan root-level .md files
-- `read_docs` — optionally scan docs/ folder
-- `create_project_card` — write structured project card to D1
+```
+add_block
+  *zone_id:      number         — target zone
+  *type:         string         — block type ("text", "image", "project-card", etc.)
+   size:         "S" | "M" | "L"    — default: "M"
+   position:     number         — index within zone (default: append)
+   page:         string         — page slug (default: current page)
+   content:      object         — block-specific content
+  Returns: { block_id, zone_id }
 
-**HTML Import Agent tools:**
-- `fetch_page` — download an HTML page
-- `parse_structure` — extract semantic structure (headings, sections, media)
-- `map_to_zones` — propose a zone/block mapping from parsed HTML
-- `extract_assets` — download and store referenced images/media
+move_block
+  *block_id:     string         — which block to move
+  *to_zone_id:   number         — destination zone
+   to_position:  number         — index in destination (default: append)
+   to_page:      string         — move across pages (default: same page)
+  Returns: { block_id, from_zone_id, to_zone_id }
+
+remove_block
+  *block_id:     string
+  Returns: { removed: true, block_id }
+
+update_block
+  *block_id:     string
+   size:         "S" | "M" | "L"
+   content:      object         — partial merge into existing content
+   style:        object         — block-level style overrides
+  Returns: { block_id, updated_fields[] }
+
+add_zone
+  *label:        string         — human name ("Projects", "Hero", etc.)
+   position:     number         — order index (default: append)
+   page:         string         — which page (default: current)
+   style:        object         — zone-level style overrides
+  Returns: { zone_id, label }
+
+remove_zone
+  *zone_id:      number
+  Returns: { removed: true, zone_id, blocks_removed }
+
+reorder_zones
+  *zone_ids:     number[]       — IDs in desired order
+   page:         string         — default: current
+  Returns: { reordered: true, order[] }
+
+change_style (at least one field besides zone_id required)
+   style_layer:  string         — switch whole layer ("minimal", "art-deco")
+   zone_id:      number         — target zone (omit for site-wide)
+   fonts:        { heading?, body? }
+   colors:       { primary?, background?, text?, accent? }
+   spacing:      "compact" | "comfortable" | "spacious"
+   custom_css:   string         — raw CSS (power users)
+  Returns: { applied_to: "site" | "zone", changes[] }
+
+suggest
+  *description:  string         — what the suggestion is
+  *actions:      object[]       — tool calls that execute if approved
+   preview:      string         — markdown preview of the change
+  Returns: { suggestion_id, status: "pending" }
+
+highlight
+  *target:       string         — "zone:3", "block:b12", "nav:top"
+   message:      string         — tooltip text
+   style:        "pulse" | "glow" | "arrow"    — default: "pulse"
+   duration:     number         — seconds, 0 = until clicked (default: 10)
+  Returns: { highlighted: true, target }
+
+ask_user — see section 4.6 for full schema
+
+search_templates
+   query:        string         — natural language ("photography gallery")
+   type:         "structural" | "style" | "both"  — default: "both"
+   limit:        number         — default: 5
+  Returns: { results: [{ id, name, description, preview_url }] }
+
+trigger_explorer
+  *url:          string         — git repo URL
+   depth:        "shallow" | "standard"   — default: "shallow"
+                                  shallow = README only
+                                  standard = README + root files + manifests + docs/
+  Returns: { job_id, status: "started" }
+
+trigger_import
+  *url:          string         — HTML page URL
+   extract_assets: boolean      — download images/media (default: true)
+  Returns: { job_id, status: "started" }
+
+add_page
+  *title:        string         — "Projects", "About", etc.
+   slug:         string         — auto-generated from title if omitted
+   clone_from:   string         — copy zones from existing page slug
+  Returns: { slug, title, page_count }
+
+remove_page
+  *slug:         string         — cannot remove "/"
+  Returns: { removed: true, slug }
+
+update_nav
+  *position:     "top" | "bottom"
+  *items:        object[]       — full replacement of nav items
+                   Each: { label, href, type: "internal"|"external"|"anchor", icon? }
+  Returns: { position, item_count }
+
+save_version
+  *name:         string         — "v1 — initial layout"
+  Returns: { version_id, name, snapshot_size }
+
+restore_version
+  *version_id:   string
+  Returns: { restored: true, version_id, name }
+```
+
+**Repo Explorer tools (background):**
+
+Uses the GitHub REST API for structured data (file listing, repo metadata)
+and `raw.githubusercontent.com` for file content. Unauthenticated: 60
+req/hr. With a user-provided GitHub PAT (via BYOK): 5,000 req/hr. For
+non-GitHub repos (GitLab, Codeberg), provider-specific adapters are
+needed (deferred to v2+).
+
+```
+read_readme
+  *repo_url:     string
+  Returns: { content, format: "md"|"txt"|"rst", length }
+
+read_manifest
+  *repo_url:     string
+   file:         string         — specific file (auto-detected if omitted)
+  Returns: { name, stack[], description?, scripts? }
+
+read_root_files
+  *repo_url:     string
+   extensions:   string[]       — default: [".md"]
+  Returns: { files: [{ name, content, length }] }
+
+read_docs
+  *repo_url:     string
+   max_files:    number         — default: 10
+  Returns: { files: [{ path, content }], truncated }
+
+create_project_card
+  *title:        string
+  *description:  string
+   stack:        string[]       — tools/tech used (universal, not dev-specific)
+   status:       "active" | "archived" | "wip"  — default: "active"
+   links:        { repo?, live?, docs? }
+   media:        string[]       — R2 paths or external URLs
+   tags:         string[]
+   date_range:   string
+   highlights:   string[]
+  Returns: { card_id, title }
+```
+
+**HTML Import Agent tools (background, v2):**
+
+```
+fetch_page
+  *url:          string
+  Returns: { html, status, content_type, length }
+
+parse_structure
+  *html:         string
+  Returns: { sections: [{ tag, text, children, media }], heading_tree }
+
+map_to_zones
+  *sections:     object[]       — output from parse_structure
+  Returns: { proposed_zones: [{ label, blocks: [{ type, content }] }] }
+
+extract_assets
+  *urls:         string[]       — asset URLs to download
+  *site_id:      string
+  Returns: { downloaded: [{ original_url, r2_path }], failed[] }
+```
 
 ### 4.3 Turn Tracker
 
@@ -707,7 +858,7 @@ cards stored in D1:
   "id": "uuid",
   "title": "Project Name",
   "description": "What it does and why it matters",
-  "tech_stack": ["Svelte", "Cloudflare Workers", "D1"],
+  "stack": ["Svelte", "Cloudflare Workers", "D1"],  // or: ["Procreate", "Watercolors"] for an artist
   "status": "active | archived | wip",
   "links": {
     "repo": "https://github.com/...",
@@ -809,7 +960,7 @@ difference is where the manifest comes from (D1 vs. baked-in).
           "content": {
             "title": "Lattice",
             "description": "Monorepo framework powering grove.place",
-            "tech_stack": ["Svelte", "Cloudflare Workers"],
+            "stack": ["Svelte", "Cloudflare Workers"],
             "links": { "repo": "https://github.com/...", "live": "https://..." },
             "image": "r2://uploads/janedoe/lattice-thumb.png"
           }
@@ -1001,7 +1152,7 @@ api_keys (id, user_id, provider, encrypted_key, created_at)
 sites (id, user_id, name, slug, template_id, style_layer_id, status, published_at)
 zones (id, site_id, order, type, label, style_overrides)
 blocks (id, zone_id, order, type, size, content_json, style_overrides)
-project_cards (id, user_id, title, description, tech_stack, links, media, tags, source)
+project_cards (id, user_id, title, description, stack, links, media, tags, source)
 
 -- Versions
 versions (id, site_id, name, snapshot_json, created_at)
