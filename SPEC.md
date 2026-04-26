@@ -177,7 +177,7 @@ tool sets.
 - `add_zone` — create a new zone
 - `suggest` — propose a change for user approval
 - `highlight` — draw overlay highlight on an element
-- `ask` — ask the user a question
+- `ask_user` — structured Q&A with multiple-choice options (see 4.6)
 - `search_templates` — find relevant templates/components
 - `trigger_explorer` — kick off a background Repo Explorer run
 - `trigger_import` — kick off a background HTML Import run
@@ -233,6 +233,81 @@ A fluid, always-visible slider in the UI:
 | **Do it for me** | AI writes content, places blocks, structures sections. User reviews and approves. |
 
 Adjustable at any point mid-conversation. The AI adapts immediately.
+
+### 4.6 Structured Q&A Tool (`ask_user`)
+
+The primary interaction pattern for the Guide Agent during interviews and
+decision points. Inspired by Claude Code's `AskUserQuestion` tool — the
+exact pattern used to design this spec.
+
+**Why structured Q&A over freeform chat:**
+- **Reduces cognitive load** — choosing is easier than generating, especially
+  for users with ADHD or decision fatigue.
+- **Prevents blank-page paralysis** — the whole point of this tool is to
+  help people who freeze when faced with open-ended prompts.
+- **Speeds up the process** — tap an option instead of typing a paragraph.
+- **Gives the AI better signal** — discrete choices are unambiguous input.
+
+**Tool schema:**
+
+```json
+{
+  "tool": "ask_user",
+  "params": {
+    "questions": [
+      {
+        "question": "What kind of work do you want to showcase?",
+        "header": "Work type",
+        "options": [
+          {
+            "label": "Software / code",
+            "description": "GitHub repos, apps, tools, libraries"
+          },
+          {
+            "label": "Visual art / design",
+            "description": "Illustrations, UI/UX, brand work, photography"
+          },
+          {
+            "label": "Writing / content",
+            "description": "Articles, blog posts, copywriting, publications"
+          },
+          {
+            "label": "Something else",
+            "description": "Music, games, research, consulting, etc."
+          }
+        ],
+        "multi_select": false
+      }
+    ]
+  }
+}
+```
+
+**Rules:**
+- 1-4 questions per call (batched for efficiency, not overwhelming)
+- 2-4 options per question
+- **"Other" with freeform text is ALWAYS available** — never box the user in
+- Options should have short labels (1-5 words) and helpful descriptions
+- `multi_select: true` when choices aren't mutually exclusive
+- The AI should mix structured Q&A (for decisions) with natural language
+  chat (for open-ended exploration, storytelling, emotional support)
+
+**When to use structured Q&A vs. freeform:**
+
+| Use structured Q&A | Use freeform chat |
+|---------------------|-------------------|
+| Template/style selection | "Tell me about this project" |
+| Layout decisions | "What are you most proud of?" |
+| Feature toggles | "What's the story behind this work?" |
+| Yes/no confirmations | Encouragement, coaching, writing tips |
+| Color/font preferences | When the user is in flow and talking freely |
+
+**UI rendering:**
+- Options appear as tappable cards/chips in the chat sidebar
+- Selected option highlights, freeform "Other" expands an input field
+- On mobile, options render as a bottom sheet for easy thumb reach
+
+---
 
 ## 5. Editor Experience
 
@@ -560,6 +635,69 @@ ships **zero JavaScript**.
 For users who want to add a portfolio to an existing website, the
 `astro-single-file` integration can inline CSS into a single HTML file.
 This is an optional export format.
+
+### 9.5 AI-Readable Output (Markdown for Agents + llms.txt)
+
+78% of design recruiters use AI screening before a human sees a portfolio.
+Output sites must be optimized for AI consumption, not just human viewing.
+
+**Layer 1: Cloudflare Markdown for Agents (automatic)**
+
+Cloudflare's zone-level feature (launched March 2026). When an AI agent
+sends `Accept: text/markdown`, CF's edge auto-converts the HTML to clean
+Markdown and serves it directly. No code changes needed.
+
+- Available on Pro+ plans and **SSL for SaaS** (our custom domain path)
+- Strips CSS, nav, scripts, styling — preserves heading hierarchy, body
+  text, links, images as Markdown references
+- 80%+ token reduction (16k HTML tokens → 3k Markdown tokens)
+- Response includes `x-markdown-tokens` header with estimated token count
+
+**This is why semantic HTML matters three times over:** good for a11y,
+good for the AI editor agent, AND good for Markdown conversion. Clean
+`<h1>`-`<h3>` hierarchy with meaningful `<section>` elements means the
+auto-converted Markdown is structured and readable.
+
+**Layer 2: `llms.txt` (auto-generated at build time)**
+
+Following the [llms.txt standard](https://llmstxt.org/), every output site
+includes a `/llms.txt` file — a curated Markdown index of the portfolio:
+
+```markdown
+# Jane Doe — Software Engineer
+
+> Full-stack developer specializing in distributed systems and developer
+> tools. 5 years of experience building for scale.
+
+## Projects
+- [Lattice](/projects/lattice): Monorepo framework powering grove.place
+- [her-go](/projects/her-go): Privacy-first AI companion bot in Go
+- [Seedling](/projects/seedling): AI-powered job discovery agent
+
+## Skills
+- Languages: Go, TypeScript, Python, Svelte
+- Infrastructure: Cloudflare Workers, D1, R2, Durable Objects
+
+## Contact
+- Email: jane@example.com
+- GitHub: github.com/janedoe
+```
+
+**Layer 3: `llms-full.txt` (auto-generated at build time)**
+
+A single-file dump of ALL portfolio content — every project description,
+skill, experience entry, and bio concatenated into one Markdown document.
+An AI screening tool can ingest the entire portfolio in a single HTTP
+request.
+
+**Implementation notes:**
+- Both files are generated by the Astro build as static assets in `dist/`
+- Content is sourced from the same project cards, zone/block data, and
+  user profile that drive the HTML output
+- Each block type has a Markdown serialization (e.g., a gallery block
+  becomes a list of image links with alt text, a code snippet block
+  becomes a fenced code block)
+- The `manifest.json` export also includes the Markdown serializations
 
 ---
 
