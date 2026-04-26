@@ -11,19 +11,20 @@
 2. [User Personas](#user-personas)
 3. [User Flows](#user-flows)
 4. [AI Agent System](#ai-agent-system)
-5. [Editor Experience](#editor-experience)
-6. [Zone & Block Architecture](#zone--block-architecture)
-7. [Template & Style System](#template--style-system)
-8. [Content Pipeline](#content-pipeline)
-9. [Output Sites](#output-sites)
-10. [Deployment Options](#deployment-options)
-11. [Infrastructure & Data Model](#infrastructure--data-model)
-12. [Auth & Identity](#auth--identity)
-13. [Billing & Pricing](#billing--pricing)
-14. [SEO & Accessibility](#seo--accessibility)
-15. [Tech Stack Summary](#tech-stack-summary)
-16. [MVP Scope](#mvp-scope)
-17. [Future Phases](#future-phases)
+5. [App Surfaces & Routes](#app-surfaces--routes)
+6. [Editor Experience](#editor-experience)
+7. [Zone & Block Architecture](#zone--block-architecture)
+8. [Template & Style System](#template--style-system)
+9. [Content Pipeline](#content-pipeline)
+10. [Output Sites](#output-sites)
+11. [Deployment Options](#deployment-options)
+12. [Infrastructure & Data Model](#infrastructure--data-model)
+13. [Auth & Identity](#auth--identity)
+14. [Billing & Pricing](#billing--pricing)
+15. [SEO & Accessibility](#seo--accessibility)
+16. [Tech Stack Summary](#tech-stack-summary)
+17. [MVP Scope](#mvp-scope)
+18. [Future Phases](#future-phases)
 
 ---
 
@@ -309,9 +310,74 @@ exact pattern used to design this spec.
 
 ---
 
-## 5. Editor Experience
+## 5. App Surfaces & Routes
 
-### 5.1 Layout
+The application has four distinct surfaces, each with its own layout,
+auth requirements, and routing.
+
+### 5.1 Landing Page (Public)
+
+```
+Route: /
+Auth:  None
+```
+
+Marketing site. What the product is, showcase examples, sign-in CTA.
+Fully static, no interactivity beyond the sign-in button.
+
+### 5.2 Dashboard (Authenticated)
+
+```
+Routes:
+  /dashboard              — Portfolio list, create new
+  /dashboard/settings     — Account: display name, email, preferences
+  /dashboard/billing      — Stripe Customer Portal, current plan, purchases
+  /dashboard/api-keys     — BYOK management (OpenRouter, OpenAI, Anthropic, etc.)
+Auth: Required (WorkOS AuthKit, Google OAuth)
+```
+
+The home base after sign-in. Shows all your portfolios with status
+(draft / published), quick actions (edit, preview, publish, export),
+and links to account management.
+
+### 5.3 Editor (Authenticated, Per-Site)
+
+```
+Route: /edit/:site-id
+Auth:  Required (must own the site)
+```
+
+The core product. Three-panel layout (chat + canvas + preview) on
+desktop, toggle on mobile. Same interface for first-time builds AND
+returning edits. Contains:
+
+- Chat sidebar with Guide Agent
+- Wizard flow (skippable/summonable)
+- Zone/block canvas with drag-and-drop
+- Live preview with responsive toggle
+- Template/style picker
+- Version history
+- Help-level dial
+- Page management (add/remove/reorder pages, edit nav)
+
+### 5.4 Published Site (Public, Separate Origin)
+
+```
+Routes:
+  you.portfoliobuilder.com/*    — Managed hosting (subdomain)
+  yourcustomdomain.com/*        — CF for SaaS (custom domain)
+Auth: None (public). "Edit" button visible to owner via session cookie.
+```
+
+SSR from manifest, cached at edge with stale-while-revalidate. Includes
+`llms.txt`, `llms-full.txt`, and `manifest.json`. Owner sees an "Edit"
+button that redirects back to `/edit/:site-id` on the builder app.
+
+---
+
+## 6. Editor Experience
+
+### 6.1 Layout
 
 **Desktop:** Three-panel layout.
 - **Left:** Chat sidebar (collapsible). AI guide lives here. Wizard steps
@@ -322,13 +388,13 @@ exact pattern used to design this spec.
 **Mobile/Tablet:** Toggle between editor and preview. Chat is an overlay
 sheet that slides up from the bottom.
 
-### 5.2 Editor ↔ Preview
+### 6.2 Editor ↔ Preview
 
 Side-by-side on desktop. Changes in the editor reflect instantly in the
 preview. On smaller screens, a toggle switches between full-screen editor
 and full-screen preview.
 
-### 5.3 AI Editing Visualization
+### 6.3 AI Editing Visualization
 
 When the AI modifies the canvas (via tools like `add_block`, `move_block`,
 `update_block`), changes are **animated in real-time**:
@@ -338,7 +404,7 @@ When the AI modifies the canvas (via tools like `add_block`, `move_block`,
 - Style changes morph smoothly (color/font transitions)
 - The user watches it happen, like someone editing a shared Google Doc
 
-### 5.4 Visual Guidance (Overlay Highlights)
+### 6.4 Visual Guidance (Overlay Highlights)
 
 The AI can highlight zones and elements with colored overlays:
 
@@ -348,7 +414,7 @@ The AI can highlight zones and elements with colored overlays:
 
 Highlights are non-intrusive and disappear on click or after a timeout.
 
-### 5.5 Version History (Git-Style Commits)
+### 6.5 Version History (Git-Style Commits)
 
 Users manually save named versions:
 
@@ -367,7 +433,7 @@ in D1. The AI can:
 - Cherry-pick elements from different versions
 - Suggest reverting specific changes without losing others
 
-### 5.6 Undo/Redo
+### 6.6 Undo/Redo
 
 Within a session, standard undo/redo (Ctrl+Z / Ctrl+Shift+Z) for
 granular changes. Named versions serve as the persistent, cross-session
@@ -375,9 +441,9 @@ history.
 
 ---
 
-## 6. Zone & Block Architecture
+## 7. Zone & Block Architecture
 
-### 6.1 Zones
+### 7.1 Zones
 
 Zones are the top-level layout containers. They define **semantic regions**
 of the portfolio (hero, projects, about, contact, etc.). Each zone:
@@ -391,7 +457,7 @@ of the portfolio (hero, projects, about, contact, etc.). Each zone:
 Templates define default zones, but users can add, remove, and reorder
 freely.
 
-### 6.2 Blocks
+### 7.2 Blocks
 
 Blocks are the content units inside zones. Each block has:
 
@@ -399,7 +465,7 @@ Blocks are the content units inside zones. Each block has:
 - A **semantic size**: S, M, or L
 - Content-specific properties (text content, image URL, gallery items, etc.)
 
-### 6.3 Responsive Grid (Semantic Sizing)
+### 7.3 Responsive Grid (Semantic Sizing)
 
 Blocks use abstract sizes that map to CSS Grid fractions per breakpoint:
 
@@ -418,7 +484,7 @@ Users never think about breakpoints. They say "this is a small thing" or
 "this is a big thing" and the grid handles the rest. The AI understands
 these sizes natively.
 
-### 6.4 MVP Block Types (~20)
+### 7.4 MVP Block Types (~20)
 
 **Content Essentials:**
 - Hero / header
@@ -446,11 +512,79 @@ these sizes natively.
 - Interactive map
 - Embedded iframe (for live demos)
 
+### 7.5 Multi-Page Support
+
+Portfolios can have multiple pages, each with its own set of zones and
+blocks. Pages are tiered by plan:
+
+| Plan | Pages |
+|------|-------|
+| Free | 1 page (single-page portfolio with anchor nav) |
+| Paid | Up to 10 pages |
+
+Each page has:
+- A URL slug (`/projects`, `/about`, `/contact`)
+- Its own zone set (independent layout per page)
+- A title and optional description (for nav labels and SEO)
+
+Pages are managed in the editor via a page list panel. The AI can
+create, rename, and reorder pages via tools.
+
+### 7.6 Navigation
+
+Every portfolio has a top nav (header) and bottom nav (footer). Nav
+items can be:
+
+| Type | Example | Behavior |
+|------|---------|----------|
+| **Internal page** | `/projects` | Navigate within the portfolio |
+| **Anchor link** | `#skills` | Scroll to a section on the current page |
+| **External link** | `ko-fi.com/jane` | Open in new tab |
+
+**Responsive behavior:**
+- Desktop: horizontal nav bar with all items visible
+- When items exceed available width: overflow into a hamburger menu
+- Mobile: always hamburger menu (slide-out drawer or bottom sheet)
+
+**Manifest structure for nav:**
+
+```json
+{
+  "nav": {
+    "top": [
+      { "label": "Projects", "href": "/projects", "type": "internal" },
+      { "label": "About", "href": "/about", "type": "internal" },
+      { "label": "Music", "href": "https://soundcloud.com/jane", "type": "external" },
+      { "label": "Support", "href": "https://ko-fi.com/jane", "type": "external" }
+    ],
+    "bottom": [
+      { "label": "GitHub", "href": "https://github.com/jane", "type": "external", "icon": "github" },
+      { "label": "Email", "href": "mailto:jane@example.com", "type": "external", "icon": "mail" }
+    ]
+  },
+  "pages": [
+    {
+      "slug": "/",
+      "title": "Home",
+      "zones": [ ... ]
+    },
+    {
+      "slug": "/projects",
+      "title": "Projects",
+      "zones": [ ... ]
+    }
+  ]
+}
+```
+
+The footer also includes a social icons row and the watermark/attribution
+line (removable on paid plans).
+
 ---
 
-## 7. Template & Style System
+## 8. Template & Style System
 
-### 7.1 Architecture
+### 8.1 Architecture
 
 Templates are composed of two independent layers:
 
@@ -465,7 +599,7 @@ These are **mix-and-match**. A developer can use musician-style aesthetics.
 A photographer can use a writer's clean typography. Structure and style
 are independent axes.
 
-### 7.2 Starter Templates (Structural)
+### 8.2 Starter Templates (Structural)
 
 Curated, profession-specific starting points:
 
@@ -480,7 +614,7 @@ Curated, profession-specific starting points:
 - Minimal (single-page, text-forward)
 - Creative (experimental layout, large typography, bold colors)
 
-### 7.3 Style Layers
+### 8.3 Style Layers
 
 Independent aesthetic presets:
 
@@ -495,22 +629,22 @@ Independent aesthetic presets:
 - Professional — neutral palette, conservative typography
 - Playful — bright colors, hand-drawn elements, bouncy animations
 
-### 7.4 Custom Fonts
+### 8.4 Custom Fonts
 
 A curated library of web fonts users can choose from, organized by vibe.
 Loaded via `@fontsource` or similar for self-hosting (no Google Fonts
 dependency in output).
 
-### 7.5 Custom Components
+### 8.5 Custom Components
 
 **Deferred to v2+.** MVP ships with the built-in block library only.
 Future: users can create custom blocks in Svelte or HTML/CSS/JS.
 
 ---
 
-## 8. Content Pipeline
+## 9. Content Pipeline
 
-### 8.1 Ingestion Paths
+### 9.1 Ingestion Paths
 
 Two paths, both producing the same output (structured project cards):
 
@@ -527,7 +661,7 @@ Two paths, both producing the same output (structured project cards):
 3. AI builds project cards incrementally from conversation
 4. More guided, less overwhelming
 
-### 8.2 Supported File Formats (MVP)
+### 9.2 Supported File Formats (MVP)
 
 | Format | Parser |
 |--------|--------|
@@ -541,7 +675,7 @@ Two paths, both producing the same output (structured project cards):
 Office formats (DOCX, PPTX, XLSX) and media formats (audio, video, 3D)
 are deferred to later phases.
 
-### 8.3 Repo Explorer Behavior
+### 9.3 Repo Explorer Behavior
 
 For a git repo URL, the agent reads:
 - `README.md` — what the project is
@@ -554,7 +688,7 @@ For a git repo URL, the agent reads:
 Does NOT read source code, test files, or CI configs. The goal is *what
 the project does and why it matters*, not how the code works.
 
-### 8.4 HTML Import Behavior
+### 9.4 HTML Import Behavior
 
 For external HTML (existing sites, exported pages):
 1. Fetch the page
@@ -563,7 +697,7 @@ For external HTML (existing sites, exported pages):
 4. Download and store referenced assets
 5. Present the mapping to the user for review and adjustment
 
-### 8.5 Project Cards
+### 9.5 Project Cards
 
 The universal intermediate format. Every ingestion path produces project
 cards stored in D1:
@@ -588,9 +722,9 @@ cards stored in D1:
 }
 ```
 
-## 9. Output Sites
+## 10. Output Sites
 
-### 9.1 Core Principle: Code Translates Data, Never Describes It
+### 10.1 Core Principle: Code Translates Data, Never Describes It
 
 **The manifest is the portfolio.** Components are renderers, not
 containers. All content — every title, description, image path, tag, and
@@ -609,7 +743,7 @@ read the manifest and display it. They never hold content as source.
 raw — the builder provides a clean, labeled web UI for editing. Power
 users who want to hand-edit JSON can.
 
-### 9.2 Two Rendering Modes
+### 10.2 Two Rendering Modes
 
 | Mode | When | How |
 |------|------|-----|
@@ -625,7 +759,7 @@ difference is where the manifest comes from (D1 vs. baked-in).
 - When manifest changes (user publishes): revalidate in the background
 - Visitors always get near-static speed, edits propagate within seconds
 
-### 9.3 Manifest Structure
+### 10.3 Manifest Structure
 
 ```json
 {
@@ -696,7 +830,7 @@ markup, no framework syntax. A non-technical user can scan this and
 understand what maps to what — or better, use the web UI and never see
 it at all.
 
-### 9.4 What Ships (Exported)
+### 10.4 What Ships (Exported)
 
 ```
 dist/
@@ -714,7 +848,7 @@ dist/
 └── manifest.json           # Source manifest (for re-import + hand-editing)
 ```
 
-### 9.5 Interactive Islands
+### 10.5 Interactive Islands
 
 Only components that need JavaScript get hydrated:
 
@@ -728,13 +862,13 @@ Only components that need JavaScript get hydrated:
 Everything else is static HTML. A portfolio with no interactive blocks
 ships **zero JavaScript**.
 
-### 9.4 Single-File Export
+### 10.6 Single-File Export
 
 For users who want to add a portfolio to an existing website, the
 `astro-single-file` integration can inline CSS into a single HTML file.
 This is an optional export format.
 
-### 9.5 AI-Readable Output (Markdown for Agents + llms.txt)
+### 10.7 AI-Readable Output (Markdown for Agents + llms.txt)
 
 78% of design recruiters use AI screening before a human sees a portfolio.
 Output sites must be optimized for AI consumption, not just human viewing.
@@ -799,7 +933,7 @@ request.
 
 ---
 
-## 10. Deployment Options
+## 11. Deployment Options
 
 ### 10.1 Download Bundle (Always Free)
 
@@ -843,7 +977,7 @@ Forage-style domain discovery integrated into the publish flow:
 
 ---
 
-## 11. Infrastructure & Data Model
+## 12. Infrastructure & Data Model
 
 ### 11.1 Cloudflare Services
 
@@ -911,7 +1045,7 @@ next session open.
 
 ---
 
-## 12. Auth & Identity
+## 13. Auth & Identity
 
 ### 12.1 Provider: WorkOS AuthKit
 
@@ -938,7 +1072,7 @@ Simple role model:
 
 ---
 
-## 13. Billing & Pricing
+## 14. Billing & Pricing
 
 ### 13.1 Model: Freemium + À La Carte
 
@@ -964,7 +1098,7 @@ Users pick what they want. No forced bundles.
 
 ---
 
-## 14. SEO & Accessibility
+## 15. SEO & Accessibility
 
 ### 14.1 SEO (Full Suite, Auto-Generated)
 
@@ -998,7 +1132,7 @@ navigation system. A well-structured a11y tree gives the agent a flat,
 labeled list of landmarks, headings, and components — much easier to
 reason about than raw HTML.
 
-## 15. Tech Stack Summary
+## 16. Tech Stack Summary
 
 ```
 BUILDER APP (SaaS editor)
@@ -1034,7 +1168,7 @@ OUTPUT SITES (generated portfolios)
 
 ---
 
-## 16. MVP Scope
+## 17. MVP Scope
 
 ### What Ships in v1
 
@@ -1049,6 +1183,8 @@ OUTPUT SITES (generated portfolios)
 - [ ] Editor: help-level dial (Guide / Draft / Do it)
 - [ ] Zone system: numbered, AI-addressable, custom creation
 - [ ] Block system: ~20 block types (essentials + media + interactive)
+- [ ] Multi-page support: page list, per-page zones (free: 1 page, paid: up to 10)
+- [ ] Navigation: top nav + footer, internal/external/anchor links, hamburger overflow
 - [ ] Semantic sizing: S/M/L with responsive CSS Grid
 - [ ] Template system: 5-10 structural templates + 5-10 style layers
 - [ ] Content pipeline: file upload (images, markdown, HTML, text, PDF)
@@ -1081,7 +1217,7 @@ OUTPUT SITES (generated portfolios)
 
 ---
 
-## 17. Future Phases
+## 18. Future Phases
 
 ### v2 — Expand
 
@@ -1099,7 +1235,6 @@ OUTPUT SITES (generated portfolios)
 
 - Office format ingestion (DOCX, PPTX, XLSX)
 - Media format ingestion (audio, video, 3D models)
-- Multi-page portfolio support
 - Collaboration (share editor access with others)
 - Portfolio analytics dashboard (who's viewing, what's popular)
 - A/B testing for portfolio variants
