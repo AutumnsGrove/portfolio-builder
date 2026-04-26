@@ -162,18 +162,86 @@ orchestrates specialist sub-agents that run in parallel.
 | **HTML Import Agent** | Async (background) | Analyzes external HTML pages. Extracts content (headings, images, text, links). Maps to zone/block structure. |
 | **Content Advisor** | Async (background) | Writing tips, description suggestions, keyword coaching. Only active when help dial is set to "Draft for me" or higher. |
 
-### 4.2 Tool Registry
+### 4.2 Tool Architecture
 
-Each tool lives in its own module with a manifest and handler. Tools
-auto-register at startup (init pattern from her-go). Both the Guide Agent
-and specialist agents share the same registry but have different active
-tool sets.
+Follows the her-go pattern: each tool is its own folder with a YAML
+manifest (schema, description, category) and a handler module. Tools
+auto-register at startup via the init pattern. The registry is shared
+across all agents, but each agent has a different **active set**.
+
+```
+agents/tools/
+├── registry.ts          — tool map, Register(), Execute()
+├── context.ts           — Context type with all deps
+├── categories.yaml      — groups tools into categories
+├── loader.ts            — loads YAML manifests, builds schemas
+├── think/
+│   ├── tool.yaml        — name, description, params schema, category: "hot"
+│   └── handler.ts
+├── reply/
+│   ├── tool.yaml
+│   └── handler.ts
+├── done/
+│   ├── tool.yaml
+│   └── handler.ts
+├── add_block/
+│   ├── tool.yaml        — category: "blocks"
+│   └── handler.ts
+└── ...
+```
+
+#### Hot vs. Deferred Tools
+
+**Hot tools** are always in the system prompt — they define the agent's
+core loop. **Deferred tools** are loaded on demand via `use_tools` to
+keep the base prompt small (~500 tokens of schema vs. ~4k if everything
+were hot).
 
 Tool schemas below use `*` to mark required params. Everything else is
 optional with the noted defaults.
 
-**Guide Agent tools (sync):**
+**Hot tools (always in prompt):**
 
+```
+think
+  *thought:      string         — internal reasoning (not shown to user,
+                                  visible in trace panel if expanded)
+  Returns: { ok: true }
+
+reply
+  *message:      string         — markdown-formatted message to the user
+   typing:       boolean        — show typing indicator first (default: true)
+  Returns: { delivered: true }
+  NOTE: ALL user-facing messages go through reply. The agent never
+  "just talks." Every message is explicit, traceable, interceptable.
+
+done
+   reason:       string         — why the turn is ending (for traces)
+  Returns: { ok: true }
+  NOTE: Agent MUST call done to end every turn. The turn tracker
+  uses this to know the Guide Agent is finished.
+
+ask_user — see section 4.8 for full schema
+
+use_tools
+  *categories:   string[]       — which categories to load
+  Returns: { loaded: string[], tool_count: number }
+  NOTE: Loads deferred tool schemas into context for this turn.
+  Categories: "blocks", "zones", "style", "pages", "content",
+  "versions", "publish", "guidance", "preview"
+
+get_site_state
+   page:         string         — specific page slug (default: all pages)
+   include:      string[]       — filter: ["zones","blocks","nav","style","meta"]
+                                  (default: all)
+  Returns: { manifest (filtered to requested scope) }
+  NOTE: The agent's eyes. Must be hot because the agent needs to
+  see the current state before almost any action.
+```
+
+**Deferred tool categories (loaded via `use_tools`):**
+
+Category **"blocks"**:
 ```
 add_block
   *zone_id:      number         — target zone
@@ -201,7 +269,10 @@ update_block
    content:      object         — partial merge into existing content
    style:        object         — block-level style overrides
   Returns: { block_id, updated_fields[] }
+```
 
+Category **"zones"**:
+```
 add_zone
   *label:        string         — human name ("Projects", "Hero", etc.)
    position:     number         — order index (default: append)
@@ -217,7 +288,10 @@ reorder_zones
   *zone_ids:     number[]       — IDs in desired order
    page:         string         — default: current
   Returns: { reordered: true, order[] }
+```
 
+Category **"style"**:
+```
 change_style (at least one field besides zone_id required)
    style_layer:  string         — switch whole layer ("minimal", "art-deco")
    zone_id:      number         — target zone (omit for site-wide)
@@ -227,20 +301,11 @@ change_style (at least one field besides zone_id required)
    custom_css:   string         — raw CSS (power users)
   Returns: { applied_to: "site" | "zone", changes[] }
 
-suggest
-  *description:  string         — what the suggestion is
-  *actions:      object[]       — tool calls that execute if approved
-   preview:      string         — markdown preview of the change
-  Returns: { suggestion_id, status: "pending" }
-
-highlight
-  *target:       string         — "zone:3", "block:b12", "nav:top"
-   message:      string         — tooltip text
-   style:        "pulse" | "glow" | "arrow"    — default: "pulse"
-   duration:     number         — seconds, 0 = until clicked (default: 10)
-  Returns: { highlighted: true, target }
-
-ask_user — see section 4.6 for full schema
+apply_template
+  *template_id:  string
+   preserve_content: boolean    — keep content, rearrange into new zone
+                                  layout (default: true)
+  Returns: { applied: true, template_id, zones_created, content_preserved }
 
 search_templates
    query:        string         — natural language ("photography gallery")
@@ -248,18 +313,18 @@ search_templates
    limit:        number         — default: 5
   Returns: { results: [{ id, name, description, preview_url }] }
 
-trigger_explorer
-  *url:          string         — git repo URL
-   depth:        "shallow" | "standard"   — default: "shallow"
-                                  shallow = README only
-                                  standard = README + root files + manifests + docs/
-  Returns: { job_id, status: "started" }
+list_fonts
+   category:     string         — "serif", "sans", "mono", "display", "handwritten"
+   vibe:         string         — "art-deco", "minimal", "bold", "playful"
+   limit:        number         — default: 20
+  Returns: { fonts: [{ name, category, preview_url, vibe_tags[] }] }
 
-trigger_import
-  *url:          string         — HTML page URL
-   extract_assets: boolean      — download images/media (default: true)
-  Returns: { job_id, status: "started" }
+list_style_layers
+  Returns: { layers: [{ id, name, description, preview_url, vibe_tags[] }] }
+```
 
+Category **"pages"**:
+```
 add_page
   *title:        string         — "Projects", "About", etc.
    slug:         string         — auto-generated from title if omitted
@@ -275,7 +340,53 @@ update_nav
   *items:        object[]       — full replacement of nav items
                    Each: { label, href, type: "internal"|"external"|"anchor", icon? }
   Returns: { position, item_count }
+```
 
+Category **"content"**:
+```
+trigger_explorer
+  *url:          string         — git repo URL
+   depth:        "shallow" | "standard"   — default: "shallow"
+                                  shallow = README only
+                                  standard = README + root files + manifests + docs/
+  Returns: { job_id, status: "started" }
+
+trigger_import
+  *url:          string         — HTML page URL
+   extract_assets: boolean      — download images/media (default: true)
+  Returns: { job_id, status: "started" }
+
+list_uploads
+   site_id:      string         — default: current site
+   type:         "image" | "document" | "all"  — default: "all"
+   sort:         "recent" | "name" | "size"    — default: "recent"
+   limit:        number         — default: 20
+  Returns: { files: [{ path, filename, type, size, dimensions?, uploaded_at }] }
+
+list_project_cards
+   status:       "active" | "archived" | "wip" | "all"  — default: "all"
+   limit:        number         — default: 20
+  Returns: { cards: [{ card_id, title, description, stack, tags }] }
+
+get_project_card
+  *card_id:      string
+  Returns: full project card object
+
+create_project_card
+  *title:        string
+  *description:  string
+   stack:        string[]       — tools/tech used (universal, not dev-specific)
+   status:       "active" | "archived" | "wip"  — default: "active"
+   links:        { repo?, live?, docs? }
+   media:        string[]       — R2 paths or external URLs
+   tags:         string[]
+   date_range:   string
+   highlights:   string[]
+  Returns: { card_id, title }
+```
+
+Category **"versions"**:
+```
 save_version
   *name:         string         — "v1 — initial layout"
   Returns: { version_id, name, snapshot_size }
@@ -283,6 +394,53 @@ save_version
 restore_version
   *version_id:   string
   Returns: { restored: true, version_id, name }
+
+list_versions
+   site_id:      string         — default: current
+   limit:        number         — default: 20
+  Returns: { versions: [{ version_id, name, created_at, snapshot_size }] }
+
+diff_versions
+  *version_a:    string         — version ID
+  *version_b:    string         — version ID
+  Returns: { changes: [{ type: "added"|"removed"|"modified", target, details }] }
+```
+
+Category **"publish"**:
+```
+publish_site
+  *site_id:      string
+   target:       "subdomain" | "custom_domain"  — default: "subdomain"
+  Returns: { url, status: "published", published_at }
+
+export_site
+  *site_id:      string
+   format:       "zip" | "single_file"          — default: "zip"
+  Returns: { download_url, size, expires_at }
+```
+
+Category **"guidance"**:
+```
+suggest
+  *description:  string         — what the suggestion is
+  *actions:      object[]       — tool calls that execute if approved
+   preview:      string         — markdown preview of the change
+  Returns: { suggestion_id, status: "pending" }
+
+highlight
+  *target:       string         — "zone:3", "block:b12", "nav:top"
+   message:      string         — tooltip text
+   style:        "pulse" | "glow" | "arrow"    — default: "pulse"
+   duration:     number         — seconds, 0 = until clicked (default: 10)
+  Returns: { highlighted: true, target }
+```
+
+Category **"preview"**:
+```
+set_preview
+  *viewport:     "desktop" | "tablet" | "mobile" | number
+                                  (number = custom width in px)
+  Returns: { viewport, width }
 ```
 
 **Repo Explorer tools (background):**
@@ -362,7 +520,104 @@ User message arrives
   → Session state updated, UI refreshes
 ```
 
-### 4.4 AI Cost Model
+### 4.4 Chat Input Model
+
+The chat sidebar uses an **attachment-first** flow. Users compose a
+message with optional file attachments, then send everything together.
+Files upload to R2 on attach (no delay on send) but the agent sees
+nothing until the user presses send.
+
+```
+┌──────────────────────────────────────────┐
+│ [sunset.png] [studio.jpg]               │  ← attached, uploading to R2
+│                                          │
+│ "The first one is my best piece, the    │
+│  second is my studio setup"             │
+│                                          │
+│                             [Send ▶]     │
+└──────────────────────────────────────────┘
+```
+
+The agent receives ONE message with text + attachments:
+
+```json
+{
+  "text": "The first one is my best piece, the second is my studio setup",
+  "attachments": [
+    {
+      "path": "r2://uploads/jane/site_abc/sunset.png",
+      "filename": "sunset.png",
+      "type": "image/png",
+      "size": 2100000,
+      "dimensions": [3200, 2400]
+    },
+    {
+      "path": "r2://uploads/jane/site_abc/studio.jpg",
+      "filename": "studio.jpg",
+      "type": "image/jpeg",
+      "size": 1800000,
+      "dimensions": [2400, 1600]
+    }
+  ]
+}
+```
+
+No orphan uploads. No guessing what an image is for. The agent gets
+files AND context in one atomic message.
+
+### 4.5 Trace System
+
+Agent activity is displayed in the chat as collapsible trace blocks,
+similar to how Claude Code shows thinking and tool calls. This serves
+two purposes: user reassurance ("the agent is working") and developer
+debugging.
+
+```
+Default view (collapsed):
+┌─────────────────────────────────────┐
+│  ▸ Thinking...                      │
+│  ▸ Reading current site state       │
+│  ▸ Loading block editing tools      │
+│  ▸ Adding project card to zone 2    │
+└─────────────────────────────────────┘
+
+Expanded view (click any line):
+┌─────────────────────────────────────┐
+│  ▾ Thinking...                      │
+│    "User wants to add a project.    │
+│     I should check get_site_state   │
+│     to see what zones exist first." │
+│                                     │
+│  ▾ Reading current site state       │
+│    get_site_state({ page: "/" })    │
+│    → 3 zones: Hero, Projects, Bio  │
+│                                     │
+│  ▾ Loading block editing tools      │
+│    use_tools({ categories:          │
+│      ["blocks"] })                  │
+│    → Loaded 4 tools                 │
+│                                     │
+│  ▾ Adding project card to zone 2    │
+│    add_block({ zone_id: 2,          │
+│      type: "project-card",          │
+│      size: "M", content: {...} })   │
+│    → { block_id: "b7", zone_id: 2 }│
+└─────────────────────────────────────┘
+```
+
+Each trace entry maps to a tool call:
+- `think` → shows reasoning (collapsed by default, expandable)
+- `use_tools` → "Loading [category] tools"
+- `get_site_state` → "Reading current site state"
+- Any deferred tool → shows the tool name and summarized result
+- `reply` → the actual message (always visible, never collapsed)
+- `done` → not shown (internal signal)
+
+Background agent activity (Repo Explorer, HTML Import) appears as a
+separate trace block: "Exploring github.com/jane/cool-app..." with
+progress updates as each sub-tool completes.
+
+### 4.6 AI Cost Model
 
 - **Free tier:** Platform-provided keys with limits (N turns per session,
   cheaper models via CF AI Gateway routing). Enough to build one portfolio.
@@ -374,7 +629,7 @@ Supported providers: OpenRouter, OpenAI, Anthropic, Google Gemini, xAI.
 CF AI Gateway handles routing, rate limiting, response caching, and
 fallback between providers.
 
-### 4.5 Help-Level Dial
+### 4.7 Help-Level Dial
 
 A fluid, always-visible slider in the UI:
 
@@ -386,7 +641,7 @@ A fluid, always-visible slider in the UI:
 
 Adjustable at any point mid-conversation. The AI adapts immediately.
 
-### 4.6 Structured Q&A Tool (`ask_user`)
+### 4.8 Structured Q&A Tool (`ask_user`)
 
 The primary interaction pattern for the Guide Agent during interviews and
 decision points. Inspired by Claude Code's `AskUserQuestion` tool — the
