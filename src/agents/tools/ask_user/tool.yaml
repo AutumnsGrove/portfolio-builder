@@ -1,0 +1,52 @@
+name: ask_user
+description: Present structured questions with clear options. This is the primary way to gather information from the user. Structured choices are easier than freeform text and prevent blank-page paralysis.
+category: hot
+parameters:
+  type: object
+  properties:
+    questions:
+      type: array
+      description: Array of 1-4 questions to ask
+      minItems: 1
+      maxItems: 4
+      items:
+        type: object
+        properties:
+          question:
+            type: string
+            description: The question text
+          header:
+            type: string
+            description: Optional section header for grouping
+          options:
+            type: array
+            description: 2-4 options to choose from
+            minItems: 2
+            maxItems: 4
+            items:
+              type: object
+              properties:
+                label:
+                  type: string
+                  description: Option text shown to user
+                description:
+                  type: string
+                  description: Optional subtext explaining the option
+                value:
+                  type: string
+                  description: Custom value (defaults to label if omitted)
+              required:
+                - label
+          multi_select:
+            type: boolean
+            description: Allow multiple selections (default false)
+            default: false
+          allow_other:
+            type: boolean
+            description: Include "Other" option with freeform text (default true)
+            default: true
+        required:
+          - question
+          - options
+  required:
+    - questions

@@ -1,0 +1,15 @@
+name: reply
+description: Send a markdown-formatted message to the user. Use this to communicate, ask questions, provide feedback, or explain what you're doing.
+category: hot
+parameters:
+  type: object
+  properties:
+    message:
+      type: string
+      description: Markdown-formatted message content
+    typing:
+      type: boolean
+      description: Show typing indicator before displaying message
+      default: true
+  required:
+    - message

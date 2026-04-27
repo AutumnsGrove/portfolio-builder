@@ -1,0 +1,18 @@
+name: use_tools
+description: Load additional tool categories when you need them. Categories - blocks (add/edit blocks), zones (manage zones), content (project cards), publish (export/publish site).
+category: hot
+parameters:
+  type: object
+  properties:
+    categories:
+      type: array
+      description: Tool categories to load
+      items:
+        type: string
+        enum:
+          - blocks
+          - zones
+          - content
+          - publish
+  required:
+    - categories

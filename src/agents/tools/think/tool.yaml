@@ -1,0 +1,11 @@
+name: think
+description: Internal reasoning step. Use this to think through problems before responding. Your thoughts are visible in the trace panel but not directly shown to the user.
+category: hot
+parameters:
+  type: object
+  properties:
+    thought:
+      type: string
+      description: Your internal reasoning or analysis
+  required:
+    - thought

@@ -1,0 +1,17 @@
+name: get_site_state
+description: Read the current portfolio manifest to see what the user has built. Returns zones, blocks, style configuration, and metadata.
+category: hot
+parameters:
+  type: object
+  properties:
+    include:
+      type: array
+      description: Optional filter for which parts to include
+      items:
+        type: string
+        enum:
+          - zones
+          - blocks
+          - style
+          - meta
+  required: []

@@ -1,0 +1,10 @@
+name: done
+description: Signal that your turn is complete. Call this after you've replied to the user and have no more actions to take this turn.
+category: hot
+parameters:
+  type: object
+  properties:
+    reason:
+      type: string
+      description: Optional explanation of why the turn is ending (for trace logs)
+  required: []
