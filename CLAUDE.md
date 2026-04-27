@@ -12,11 +12,12 @@ Read `SPEC.md` for the full technical specification.
 ## Tech Stack
 
 - **Builder app:** Astro + Svelte 5 + bits-ui + Tailwind v4
-- **Backend:** Cloudflare Workers + D1 + R2 + Durable Objects
+- **Backend:** Cloudflare Workers + D1 + R2
+  - Durable Objects (v2 — v1 uses D1 + session cookies)
 - **Auth:** WorkOS AuthKit
-- **Payments:** Stripe
-- **AI routing:** Cloudflare AI Gateway
-- **Output sites:** Astro SSG + Svelte 5 islands
+- **Payments:** Stripe (v2 — no billing in v1)
+- **AI routing:** OpenRouter (v1 single provider); Cloudflare AI Gateway (v2)
+- **Output sites:** Astro SSG (v1 builds at publish time); Astro SSR with stale-while-revalidate (v2)
 
 ## Commands
 
@@ -44,23 +45,65 @@ pnpm check               # Svelte check (type checking)
 
 ## Git Conventions
 
-Use [Conventional Commits](https://www.conventionalcommits.org/):
+Use [Conventional Commits](https://www.conventionalcommits.org/) with **descriptive commit bodies** that explain purpose and impact, not just restate the type.
+
+### Format
 
 ```
-feat: add gallery block component
-fix: correct zone reordering on mobile
-docs: update SPEC with v2 deployment section
-style: format block editor styles
-refactor: extract zone grid into shared util
-test: add unit tests for project card parser
-chore: update astro to 5.x
+type(scope): short title (50 chars max)
+
+1-2 lines explaining why this change matters and what it enables or fixes.
+Focus on impact and motivation, not mechanical description.
 ```
 
-Types: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`, `ci`, `perf`
+### Good Examples
+
+```
+feat(editor): add zone reordering via up/down buttons
+
+Gives users control over layout structure without the complexity of drag-and-drop.
+Covers 80% of reordering value for v1 validation.
+
+fix(agent): prevent infinite loop in tool call chain
+
+Adds circuit breaker after 20 tool calls in a single turn. Trace is preserved
+for debugging. Addresses v1 acceptance criterion #3 (agent reliability).
+
+docs(spec): split SPEC.md into versioned files (v1/v2/v3)
+
+Original 1700-line doc was too dense to parse. Separate files let you focus on
+one phase at a time. SPEC.md becomes a navigation hub.
+
+refactor(blocks): extract grid sizing logic into shared util
+
+DRY up S/M/L → CSS Grid mapping. Makes it easier to adjust responsive behavior
+across all block types from one place.
+```
+
+### Poor Examples (Don't Do This)
+
+```
+docs(spec): add versioned roadmap section
+docs(spec): tag features by version (v1/v2/v3)
+```
+
+These just restate the type and title. They don't explain **why** or **what impact** the change has.
+
+### Types
+
+`feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`, `ci`, `perf`
 
 Scope is optional but encouraged: `feat(editor):`, `fix(agent):`, `test(blocks):`
 
 ## Architecture Principles
+
+### Versioned Scope
+
+This spec is split into v1, v2, v3 with acceptance gates between each. **When working on this codebase, default to v1 scope only.**
+
+- Read [SPEC_v1.md](SPEC_v1.md) for what ships in v1.
+- If a feature request maps to v2 or v3, flag it and ask before implementing.
+- The biggest risk to this project is scope creep — the spec was rewritten specifically to prevent it. Do not undo that work.
 
 ### Think Before Coding
 
@@ -135,26 +178,29 @@ portfolio-builder/
 │   ├── blocks/            # Block type definitions and renderers
 │   ├── zones/             # Zone layout system
 │   ├── agents/            # AI agent system
-│   │   ├── guide/         # Guide agent (sync, user-facing)
-│   │   ├── explorer/      # Repo explorer (async)
-│   │   ├── importer/      # HTML import (async, v2)
-│   │   ├── advisor/       # Content advisor (async, v2)
-│   │   └── tools/         # Shared tool registry
+│   │   ├── guide/         # Guide agent (sync, user-facing) — v1
+│   │   ├── explorer/      # Repo explorer (async) — v2
+│   │   ├── importer/      # HTML import (async) — v2
+│   │   ├── advisor/       # Content advisor (async) — v2
+│   │   └── tools/         # Shared tool registry — v1
 │   ├── templates/         # Structural templates
 │   ├── styles/            # Style layers
 │   ├── lib/               # Shared utilities
 │   └── pages/             # Astro pages (builder app routes)
 ├── worker/                # Cloudflare Worker entry point
 │   ├── api/               # API routes
-│   ├── auth/              # WorkOS integration
-│   ├── billing/           # Stripe integration
-│   └── hosting/           # Site serving from R2
+│   ├── auth/              # WorkOS integration — v1
+│   ├── billing/           # Stripe integration — v2
+│   └── hosting/           # Site serving from R2 — v1
 ├── output/                # Astro SSG output templates
 │   ├── templates/         # Output site templates
 │   └── islands/           # Svelte islands for output sites
 ├── migrations/            # D1 schema migrations
 ├── tests/                 # Test files
-├── SPEC.md                # Full technical specification
+├── SPEC.md                # Overview & navigation hub
+├── SPEC_v1.md             # v1 — Validate the Core Loop
+├── SPEC_v2.md             # v2 — Expand
+├── SPEC_v3.md             # v3 — Deepen
 ├── CLAUDE.md              # This file
 └── wrangler.jsonc         # Cloudflare config
 ```
@@ -163,14 +209,22 @@ portfolio-builder/
 
 - **Astro over SvelteKit** for output sites: portfolios are mostly static.
   Islands handle the few interactive pieces. Zero JS by default.
-- **SSR for hosted, SSG for exported**: same components, different manifest
-  source. Hosted sites use stale-while-revalidate caching for near-static speed.
+- **SSG for v1, SSR for v2**: v1 builds sites at publish time to static files
+  in R2 and edge-caches them. v2 adds per-request SSR with stale-while-revalidate.
+  Same components, different manifest source.
 - **Manifest-driven architecture**: code translates data, never describes it.
   All content lives in JSON manifests. Components are pure renderers.
 - **WorkOS over Clerk** for auth: 1M free MAU, native CF Workers support,
   no `node:async_hooks` issues.
-- **D1 over DO SQLite** for primary data: simpler to query, back up, and
-  reason about. DOs are for ephemeral session state only.
+- **D1 + session cookies for v1; DOs for v2**: v1 keeps it simple. DOs only
+  land if scale demands them.
+- **OpenRouter for v1; multi-provider for v2**: v1 hardcodes one AI provider
+  to minimize debug surface while still allowing model experimentation. CF AI
+  Gateway (proxy layer for caching, observability, fallback) and BYOK are v2.
+- **Single-page for v1; multi-page for v2**: anchor nav covers most portfolios.
+  Removes routing, nav, and SEO complexity from validation phase.
+- **No billing in v1**: free for everyone until the loop is proven. Stripe lands
+  in v2 once we know the economics.
 - **Semantic sizing (S/M/L) over pixels**: responsive by design, AI-friendly,
   user-friendly.
 - **Zone-based editor over freeform canvas**: keeps layout structured for AI
