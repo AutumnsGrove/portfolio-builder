@@ -1,22 +1,266 @@
 ---
 export const prerender = true;
+
+import "@fontsource-variable/outfit";
+import "@fontsource-variable/lexend";
+import "@/styles/app.css";
+
+// Phosphor SVG paths (duotone weight) — inlined to avoid import issues with SSR.
+// Source: https://phosphoricons.com
+// These are just the few icons we need on the landing page.
+const icons = {
+  chatCircle: `<path opacity="0.2" d="M224,128A96,96,0,0,1,79.93,211.11h0L42.34,221.66a8,8,0,0,1-9.72-9.72l10.06-36.66-.47-.81A96,96,0,1,1,224,128Z"/><path d="M128,24A104,104,0,0,0,36.18,176.88L24.83,218.05a16,16,0,0,0,19.52,19.52l41.17-11.35A104,104,0,1,0,128,24Zm0,192a88.11,88.11,0,0,1-44.06-11.78,8,8,0,0,0-4-1.08,8.09,8.09,0,0,0-2.12.28L40,215.56l12.06-37.81a8,8,0,0,0-.79-6.14A88,88,0,1,1,128,216Z"/>`,
+  compass: `<path opacity="0.2" d="M128,128,96,160l-39.6,14.4a96,96,0,0,1,0-92.75L96,96Z" /><path opacity="0.2" d="M128,128l32-32,39.6-14.4a96,96,0,0,1,0,92.75L160,160Z" /><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216ZM172.42,72.84l-64,24a8.08,8.08,0,0,0-4.16,3.42l-24,40a8,8,0,0,0,1.16,9.32l24,24a8,8,0,0,0,9.32,1.16l40-24a8.08,8.08,0,0,0,3.42-4.16l24-64A8,8,0,0,0,172.42,72.84Zm-31.26,85-17-17,49.13-18.42Z"/>`,
+  arrowUpRight: `<path d="M200,64V168a8,8,0,0,1-16,0V83.31L69.66,197.66a8,8,0,0,1-11.32-11.32L172.69,72H88a8,8,0,0,1,0-16H192A8,8,0,0,1,200,64Z"/>`,
+  arrowRight: `<path d="M221.66,133.66l-72,72a8,8,0,0,1-11.32-11.32L196.69,136H40a8,8,0,0,1,0-16H196.69l-58.35-58.34a8,8,0,0,1,11.32-11.32l72,72A8,8,0,0,1,221.66,133.66Z"/>`,
+};
 ---
 
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Portfolio Builder</title>
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <title>Portfolio Builder — Show your work to the world</title>
+    <meta
+      name="description"
+      content="An AI-guided portfolio builder that helps you showcase your work. The AI guides; you decide."
+    />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   </head>
-  <body class="min-h-screen bg-white text-zinc-900 antialiased">
-    <main class="flex items-center justify-center min-h-screen">
-      <div class="text-center">
-        <h1 class="text-4xl font-bold tracking-tight">Portfolio Builder</h1>
-        <p class="mt-4 text-lg text-zinc-500">
-          AI-guided portfolio builder. Coming soon.
-        </p>
+  <body class="bg-cream text-ink font-body antialiased">
+    <!-- Nav — sits on cream, outside the hero -->
+    <nav
+      class="mx-auto flex max-w-6xl items-center justify-between px-6 py-6 sm:px-8 lg:px-12"
+    >
+      <a
+        href="/"
+        class="font-display text-lg font-semibold tracking-tight text-ink"
+      >
+        Portfolio Builder
+      </a>
+      <a
+        href="/dashboard"
+        class="rounded-full bg-ink px-5 py-2.5 font-body text-sm font-medium text-cream transition-all duration-300 ease-out hover:-translate-y-0.5 hover:shadow-hover"
+      >
+        Sign in
+      </a>
+    </nav>
+
+    <!-- Hero — Cream base, amber as a contained accent shape -->
+    <section class="overflow-hidden">
+      <div
+        class="mx-auto max-w-6xl px-6 pb-24 pt-12 sm:px-8 md:pb-32 md:pt-20 lg:px-12"
+      >
+        <div class="grid items-center gap-12 md:grid-cols-[1fr_auto] md:gap-16">
+          <!-- Left: copy -->
+          <div class="max-w-2xl">
+            <h1
+              class="font-display text-[clamp(2.75rem,6vw+0.5rem,5rem)] font-extrabold leading-[1.02] tracking-tight text-ink"
+              style="text-wrap: balance;"
+            >
+              You've been meaning to build this.
+            </h1>
+            <p
+              class="mt-6 max-w-xl text-[clamp(1.125rem,1.5vw+0.5rem,1.375rem)] leading-relaxed text-graphite md:mt-8"
+            >
+              Portfolio Builder sits with you, asks about your work, and helps
+              you shape it into something you're proud of. No templates to fill.
+              No blank pages to stare at.
+            </p>
+            <div class="mt-10 flex flex-wrap items-center gap-4 md:mt-12">
+              <a
+                href="/dashboard"
+                class="inline-flex items-center gap-2 rounded-full bg-amber px-7 py-3.5 font-body text-base font-medium text-ink transition-all duration-300 ease-out hover:-translate-y-0.5 hover:bg-amber-dim hover:text-cream hover:shadow-hover"
+              >
+                Start building
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 256 256" fill="currentColor"><Fragment set:html={icons.arrowRight} /></svg>
+              </a>
+              <span class="text-sm text-graphite">Free to build and export</span>
+            </div>
+          </div>
+
+          <!-- Right: abstract portfolio mockup in amber tones -->
+          <div
+            class="relative hidden h-80 w-72 md:block lg:h-96 lg:w-80"
+            aria-hidden="true"
+          >
+            <!-- Background shape -->
+            <div
+              class="absolute inset-0 rounded-2xl bg-amber/20"
+            ></div>
+            <!-- Mockup: simplified portfolio preview -->
+            <div
+              class="absolute inset-3 flex flex-col gap-3 rounded-xl bg-cream p-5 shadow-overlay"
+            >
+              <!-- Fake nav bar -->
+              <div class="flex items-center gap-2">
+                <div class="h-2.5 w-16 rounded-full bg-ink/15"></div>
+                <div class="ml-auto h-2.5 w-8 rounded-full bg-ink/10"></div>
+                <div class="h-2.5 w-8 rounded-full bg-ink/10"></div>
+              </div>
+              <!-- Fake hero -->
+              <div class="mt-2 rounded-lg bg-amber/30 p-4">
+                <div class="h-3 w-24 rounded-full bg-ink/20"></div>
+                <div class="mt-2 h-2 w-32 rounded-full bg-ink/10"></div>
+              </div>
+              <!-- Fake project cards -->
+              <div class="grid flex-1 grid-cols-2 gap-2">
+                <div class="rounded-lg bg-stone p-3">
+                  <div class="aspect-[4/3] rounded bg-ash"></div>
+                  <div class="mt-2 h-2 w-12 rounded-full bg-ink/15"></div>
+                </div>
+                <div class="rounded-lg bg-stone p-3">
+                  <div class="aspect-[4/3] rounded bg-amber/25"></div>
+                  <div class="mt-2 h-2 w-10 rounded-full bg-ink/15"></div>
+                </div>
+                <div class="rounded-lg bg-stone p-3">
+                  <div class="aspect-[4/3] rounded bg-amber/15"></div>
+                  <div class="mt-2 h-2 w-14 rounded-full bg-ink/15"></div>
+                </div>
+                <div class="rounded-lg bg-stone p-3">
+                  <div class="aspect-[4/3] rounded bg-ash"></div>
+                  <div class="mt-2 h-2 w-8 rounded-full bg-ink/15"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-    </main>
+    </section>
+
+    <!-- Divider — a thin amber line to connect sections with warmth -->
+    <div class="mx-auto max-w-6xl px-6 sm:px-8 lg:px-12">
+      <div class="h-px bg-amber/25"></div>
+    </div>
+
+    <!-- How it works — conversational flow -->
+    <section>
+      <div
+        class="mx-auto max-w-6xl px-6 py-20 sm:px-8 md:py-28 lg:px-12"
+      >
+        <h2
+          class="font-display text-[clamp(1.75rem,3.5vw+0.5rem,2.75rem)] font-bold leading-tight tracking-tight text-ink"
+          style="text-wrap: balance;"
+        >
+          Three conversations. One portfolio.
+        </h2>
+        <p class="mt-4 max-w-lg text-graphite">
+          No drag-and-drop maze. Just an AI that listens, suggests, and helps
+          you build at your own pace.
+        </p>
+
+        <!-- Steps as a vertical conversational flow -->
+        <ol class="mt-16 space-y-14 md:mt-20 md:space-y-20">
+          <!-- Step 1 -->
+          <li class="grid gap-4 md:grid-cols-[3.5rem_1fr] md:gap-8">
+            <span
+              class="flex h-12 w-12 items-center justify-center rounded-xl bg-amber/15 text-amber-dim"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 256 256" fill="currentColor"><Fragment set:html={icons.chatCircle} /></svg>
+            </span>
+            <div>
+              <h3
+                class="font-display text-xl font-bold leading-snug text-ink md:text-2xl"
+              >
+                Tell your story
+              </h3>
+              <p class="mt-3 max-w-lg leading-relaxed text-graphite">
+                The AI interviews you: what do you do, what have you built, what
+                matters most? It pulls structure from your words, not the other
+                way around.
+              </p>
+            </div>
+          </li>
+
+          <!-- Step 2 -->
+          <li class="grid gap-4 md:grid-cols-[3.5rem_1fr] md:gap-8">
+            <span
+              class="flex h-12 w-12 items-center justify-center rounded-xl bg-amber/15 text-amber-dim"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 256 256" fill="currentColor"><Fragment set:html={icons.compass} /></svg>
+            </span>
+            <div>
+              <h3
+                class="font-display text-xl font-bold leading-snug text-ink md:text-2xl"
+              >
+                Shape your portfolio
+              </h3>
+              <p class="mt-3 max-w-lg leading-relaxed text-graphite">
+                Pick a starting point, rearrange sections, adjust the style. The
+                AI suggests layouts and content. You make the calls.
+              </p>
+            </div>
+          </li>
+
+          <!-- Step 3 -->
+          <li class="grid gap-4 md:grid-cols-[3.5rem_1fr] md:gap-8">
+            <span
+              class="flex h-12 w-12 items-center justify-center rounded-xl bg-amber/15 text-amber-dim"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 256 256" fill="currentColor"><Fragment set:html={icons.arrowUpRight} /></svg>
+            </span>
+            <div>
+              <h3
+                class="font-display text-xl font-bold leading-snug text-ink md:text-2xl"
+              >
+                Ship it
+              </h3>
+              <p class="mt-3 max-w-lg leading-relaxed text-graphite">
+                Publish to a live URL or download a static site you own forever.
+                Fast, accessible, optimized for humans and AI recruiters alike.
+              </p>
+            </div>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- Final CTA — Amber contained as a rounded panel -->
+    <section class="px-6 pb-16 sm:px-8 lg:px-12">
+      <div
+        class="mx-auto max-w-6xl rounded-2xl bg-amber/12 px-8 py-16 md:px-16 md:py-20"
+      >
+        <div class="max-w-xl">
+          <h2
+            class="font-display text-[clamp(1.75rem,3.5vw+0.5rem,2.75rem)] font-bold leading-tight tracking-tight text-ink"
+          >
+            Ready when you are.
+          </h2>
+          <p class="mt-4 leading-relaxed text-graphite">
+            Build your portfolio in a single session. No credit card. Export for
+            free.
+          </p>
+          <div class="mt-8">
+            <a
+              href="/dashboard"
+              class="inline-flex items-center gap-2 rounded-full bg-amber px-7 py-3.5 font-body text-base font-medium text-ink transition-all duration-300 ease-out hover:-translate-y-0.5 hover:bg-amber-dim hover:text-cream hover:shadow-hover"
+            >
+              Get started
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 256 256" fill="currentColor"><Fragment set:html={icons.arrowRight} /></svg>
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer — Minimal -->
+    <footer>
+      <div
+        class="mx-auto flex max-w-6xl items-center justify-between px-6 py-8 sm:px-8 lg:px-12"
+      >
+        <span class="text-sm text-graphite">
+          &copy; {new Date().getFullYear()} Portfolio Builder
+        </span>
+        <nav class="flex gap-6 text-sm text-graphite">
+          <a href="/privacy" class="transition-colors hover:text-ink"
+            >Privacy</a
+          >
+          <a href="/terms" class="transition-colors hover:text-ink">Terms</a>
+        </nav>
+      </div>
+    </footer>
   </body>
 </html>
