@@ -1,0 +1,36 @@
+---
+/**
+ * Chat Panel Demo — Preview the AI guide interface.
+ *
+ * This page is for development only, to test the chat components.
+ */
+
+export const prerender = true;
+
+import "@fontsource-variable/outfit";
+import "@fontsource-variable/lexend";
+import "@/styles/app.css";
+import ChatPanel from "@/components/chat/ChatPanel.svelte";
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Chat Panel Demo</title>
+  </head>
+  <body class="bg-stone">
+    <div class="flex h-screen">
+      <!-- Chat Panel -->
+      <ChatPanel client:load isCollapsed={false} />
+
+      <!-- Main Content Area (placeholder) -->
+      <main class="flex flex-1 items-center justify-center">
+        <div class="text-center">
+          <h1 class="font-display text-3xl font-bold text-ink">Chat Panel Demo</h1>
+          <p class="mt-2 text-graphite">The chat panel is on the left →</p>
+        </div>
+      </main>
+    </div>
+  </body>
+</html>
