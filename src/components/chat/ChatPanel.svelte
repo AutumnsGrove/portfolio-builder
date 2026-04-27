@@ -7,6 +7,7 @@
  */
 
 import { onMount } from 'svelte';
+import { toast } from 'sonner';
 import ChatMessage from './ChatMessage.svelte';
 import ChatInput from './ChatInput.svelte';
 import StructuredQuestions from './StructuredQuestions.svelte';
@@ -37,6 +38,7 @@ let messages = $state<Message[]>([
 
 let isAiThinking = $state(false);
 let currentQuestions = $state<any>(null);
+let lastUserMessage = $state<string>(''); // For retry on error
 
 // Progressive thinking messages
 const thinkingMessages = [
@@ -55,7 +57,10 @@ $effect(() => {
   }
 });
 
-function handleSendMessage(message: string) {
+async function handleSendMessage(message: string) {
+  // Save for retry
+  lastUserMessage = message;
+
   // Add user message
   messages = [
     ...messages,
@@ -76,8 +81,28 @@ function handleSendMessage(message: string) {
     thinkingMessageIndex = (thinkingMessageIndex + 1) % thinkingMessages.length;
   }, 2000);
 
-  // TODO: Send to AI agent API
-  setTimeout(() => {
+  try {
+    // TODO: Replace with real API call
+    // const response = await fetch('/api/chat', {
+    //   method: 'POST',
+    //   headers: { 'Content-Type': 'application/json' },
+    //   body: JSON.stringify({ message, conversationId: 'xxx' })
+    // });
+    // if (!response.ok) throw new Error('AI request failed');
+    // const data = await response.json();
+
+    // Mock: Simulate random failure (20% chance) for demo
+    await new Promise((resolve, reject) => {
+      setTimeout(() => {
+        if (Math.random() < 0.2) {
+          reject(new Error('AI service temporarily unavailable'));
+        } else {
+          resolve(null);
+        }
+      }, 1500);
+    });
+
+    // Success: Add AI response
     messages = [
       ...messages,
       {
@@ -87,22 +112,49 @@ function handleSendMessage(message: string) {
         timestamp: new Date(),
       },
     ];
+  } catch (error) {
+    // Error handling
+    console.error('AI request failed:', error);
 
-    // Stop thinking animation
+    // Show error toast with retry action
+    toast.error('Something went wrong', {
+      description: 'The Guide had trouble responding. Would you like to try again?',
+      action: {
+        label: 'Retry',
+        onClick: () => handleRetry(),
+      },
+      duration: 10000, // 10s to give user time to read/decide
+    });
+  } finally {
+    // Always stop thinking animation
     isAiThinking = false;
     if (thinkingInterval) {
       clearInterval(thinkingInterval);
       thinkingInterval = undefined;
     }
-  }, 1500);
+  }
 }
 
-function handleQuestionResponse(response: any) {
+function handleRetry() {
+  if (lastUserMessage) {
+    handleSendMessage(lastUserMessage);
+  }
+}
+
+async function handleQuestionResponse(response: any) {
   console.log('User answered:', response);
   currentQuestions = null;
 
-  // TODO: Send response to AI agent
-  handleSendMessage(`Selected: ${response.selected.join(', ')}`);
+  // Format selection for display
+  const selectedText = response.selected.length > 0
+    ? `Selected: ${response.selected.join(', ')}`
+    : '';
+  const otherText = response.other ? `Other: ${response.other}` : '';
+  const displayMessage = [selectedText, otherText].filter(Boolean).join(' | ');
+
+  // TODO: Send structured response to AI agent API
+  // For now, just send as a regular message
+  await handleSendMessage(displayMessage);
 }
 </script>
 

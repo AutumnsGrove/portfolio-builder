@@ -21,7 +21,13 @@ import { Toaster } from "sonner";
     <title>Chat Panel Demo</title>
   </head>
   <body class="bg-stone">
-    <Toaster client:only="svelte" position="top-right" />
+    <Toaster
+      client:only="svelte"
+      position="top-right"
+      theme="light"
+      richColors
+      closeButton
+    />
     <div class="flex h-screen">
       <!-- Chat Panel -->
       <ChatPanel client:load isCollapsed={false} />
