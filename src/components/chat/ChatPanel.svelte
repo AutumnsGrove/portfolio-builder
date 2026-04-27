@@ -6,7 +6,6 @@
  * Displays message history, AI traces, structured questions, and input area.
  */
 
-import { onMount } from 'svelte';
 import { Toaster, toast } from 'svelte-sonner';
 import ChatMessage from './ChatMessage.svelte';
 import ChatInput from './ChatInput.svelte';
@@ -49,16 +48,6 @@ const thinkingMessages = [
 let thinkingMessageIndex = $state(0);
 let thinkingInterval: number | undefined;
 
-// Debug: Test toast on mount
-onMount(() => {
-  console.log('ChatPanel mounted, toast available:', typeof toast);
-  console.log('Toaster in DOM:', document.querySelector('[data-sonner-toaster]'));
-  // Force a test toast
-  setTimeout(() => {
-    console.log('Attempting test toast...');
-    toast.error('Test toast');
-  }, 1000);
-});
 
 // Auto-scroll to bottom when new messages arrive
 let messagesContainer: HTMLDivElement;
@@ -102,10 +91,14 @@ async function handleSendMessage(message: string) {
     // if (!response.ok) throw new Error('AI request failed');
     // const data = await response.json();
 
-    // Mock: Force error for testing (TODO: restore random after verifying)
+    // Mock: Simulate random failure (50% for testing, adjust as needed)
     await new Promise((resolve, reject) => {
       setTimeout(() => {
-        reject(new Error('AI service temporarily unavailable'));
+        if (Math.random() < 0.5) {
+          reject(new Error('AI service temporarily unavailable'));
+        } else {
+          resolve(null);
+        }
       }, 1500);
     });
 
