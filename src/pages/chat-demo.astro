@@ -10,8 +10,9 @@ export const prerender = true;
 import "@fontsource-variable/outfit";
 import "@fontsource-variable/lexend";
 import "@/styles/app.css";
+import "svelte-sonner/styles.css";
 import ChatPanel from "@/components/chat/ChatPanel.svelte";
-import { Toaster } from "sonner";
+import { Toaster } from "svelte-sonner";
 ---
 
 <html lang="en">
@@ -36,7 +37,7 @@ import { Toaster } from "sonner";
       <main class="flex flex-1 items-center justify-center">
         <div class="text-center">
           <h1 class="font-display text-3xl font-bold text-ink">Chat Panel Demo</h1>
-          <p class="mt-2 text-graphite">The chat panel is on the left →</p>
+          <p class="mt-2 text-graphite">← The chat panel is on the left</p>
         </div>
       </main>
     </div>

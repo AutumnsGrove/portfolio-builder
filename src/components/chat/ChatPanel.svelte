@@ -7,7 +7,7 @@
  */
 
 import { onMount } from 'svelte';
-import { toast } from 'sonner';
+import { toast } from 'svelte-sonner';
 import ChatMessage from './ChatMessage.svelte';
 import ChatInput from './ChatInput.svelte';
 import StructuredQuestions from './StructuredQuestions.svelte';
@@ -91,10 +91,10 @@ async function handleSendMessage(message: string) {
     // if (!response.ok) throw new Error('AI request failed');
     // const data = await response.json();
 
-    // Mock: Simulate random failure (20% chance) for demo
+    // Mock: Simulate random failure for demo (adjust rate for testing)
     await new Promise((resolve, reject) => {
       setTimeout(() => {
-        if (Math.random() < 0.2) {
+        if (Math.random() < 0.5) { // 50% failure rate for easy testing
           reject(new Error('AI service temporarily unavailable'));
         } else {
           resolve(null);
