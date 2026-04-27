@@ -7,7 +7,7 @@
  */
 
 import { onMount } from 'svelte';
-import { toast } from 'svelte-sonner';
+import { Toaster, toast } from 'svelte-sonner';
 import ChatMessage from './ChatMessage.svelte';
 import ChatInput from './ChatInput.svelte';
 import StructuredQuestions from './StructuredQuestions.svelte';
@@ -48,6 +48,17 @@ const thinkingMessages = [
 ];
 let thinkingMessageIndex = $state(0);
 let thinkingInterval: number | undefined;
+
+// Debug: Test toast on mount
+onMount(() => {
+  console.log('ChatPanel mounted, toast available:', typeof toast);
+  console.log('Toaster in DOM:', document.querySelector('[data-sonner-toaster]'));
+  // Force a test toast
+  setTimeout(() => {
+    console.log('Attempting test toast...');
+    toast.error('Test toast');
+  }, 1000);
+});
 
 // Auto-scroll to bottom when new messages arrive
 let messagesContainer: HTMLDivElement;
@@ -91,14 +102,10 @@ async function handleSendMessage(message: string) {
     // if (!response.ok) throw new Error('AI request failed');
     // const data = await response.json();
 
-    // Mock: Simulate random failure for demo (adjust rate for testing)
+    // Mock: Force error for testing (TODO: restore random after verifying)
     await new Promise((resolve, reject) => {
       setTimeout(() => {
-        if (Math.random() < 0.5) { // 50% failure rate for easy testing
-          reject(new Error('AI service temporarily unavailable'));
-        } else {
-          resolve(null);
-        }
+        reject(new Error('AI service temporarily unavailable'));
       }, 1500);
     });
 
@@ -157,6 +164,8 @@ async function handleQuestionResponse(response: any) {
   await handleSendMessage(displayMessage);
 }
 </script>
+
+<Toaster position="top-right" richColors closeButton />
 
 <aside
   class="flex h-full flex-col border-r border-ash bg-cream transition-all duration-300"

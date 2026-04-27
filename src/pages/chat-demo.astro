@@ -11,7 +11,6 @@ import "@fontsource-variable/outfit";
 import "@fontsource-variable/lexend";
 import "@/styles/app.css";
 import ChatPanel from "@/components/chat/ChatPanel.svelte";
-import { Toaster } from "svelte-sonner";
 ---
 
 <html lang="en">
@@ -21,13 +20,6 @@ import { Toaster } from "svelte-sonner";
     <title>Chat Panel Demo</title>
   </head>
   <body class="bg-stone">
-    <Toaster
-      client:only="svelte"
-      position="top-right"
-      theme="light"
-      richColors
-      closeButton
-    />
     <div class="flex h-screen">
       <!-- Chat Panel -->
       <ChatPanel client:load isCollapsed={false} />
