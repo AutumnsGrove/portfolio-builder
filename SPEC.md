@@ -173,12 +173,12 @@ orchestrates specialist sub-agents that run in parallel.
 
 ### 4.1 Agent Overview
 
-| Agent | Mode | Role |
-|-------|------|------|
-| **Guide Agent** | Sync (user-facing) | Main chat AI. Interviews, suggests, orchestrates. Calls tools to modify the editor. Responds immediately. |
-| **Repo Explorer** | Async (background) | Scans git repos: README, root .md files, package manifests, docs/ folder. Produces structured project cards. |
-| **HTML Import Agent** | Async (background) | Analyzes external HTML pages. Extracts content (headings, images, text, links). Maps to zone/block structure. |
-| **Content Advisor** | Async (background) | Writing tips, description suggestions, keyword coaching. Only active when help dial is set to "Draft for me" or higher. |
+| Agent | Mode | Role | Version |
+|-------|------|------|---------|
+| **Guide Agent** | Sync (user-facing) | Main chat AI. Interviews, suggests, orchestrates. Calls tools to modify the editor. Responds immediately. | (v1) |
+| **Repo Explorer** | Async (background) | Scans git repos: README, root .md files, package manifests, docs/ folder. Produces structured project cards. | (v2) |
+| **HTML Import Agent** | Async (background) | Analyzes external HTML pages. Extracts content (headings, images, text, links). Maps to zone/block structure. | (v2) |
+| **Content Advisor** | Async (background) | Writing tips, description suggestions, keyword coaching. Only active when help dial is set to "Draft for me" or higher. | (v2) |
 
 ### 4.2 Tool Architecture
 
@@ -218,7 +218,7 @@ were hot).
 Tool schemas below use `*` to mark required params. Everything else is
 optional with the noted defaults.
 
-**Hot tools (always in prompt):**
+**Hot tools (always in prompt) — all (v1):**
 
 ```
 think
@@ -245,8 +245,9 @@ use_tools
   *categories:   string[]       — which categories to load
   Returns: { loaded: string[], tool_count: number }
   NOTE: Loads deferred tool schemas into context for this turn.
-  Categories: "blocks", "zones", "style", "pages", "content",
-  "versions", "publish", "guidance", "preview"
+  Categories: "blocks" (v1), "zones" (v1), "style" (v2),
+  "pages" (v2), "content" (v1), "versions" (v2),
+  "publish" (v1), "guidance" (v2), "preview" (v2)
 
 get_site_state
    page:         string         — specific page slug (default: all pages)
@@ -259,7 +260,7 @@ get_site_state
 
 **Deferred tool categories (loaded via `use_tools`):**
 
-Category **"blocks"**:
+Category **"blocks"** (v1):
 ```
 add_block
   *zone_id:      number         — target zone
@@ -289,7 +290,7 @@ update_block
   Returns: { block_id, updated_fields[] }
 ```
 
-Category **"zones"**:
+Category **"zones"** (v1):
 ```
 add_zone
   *label:        string         — human name ("Projects", "Hero", etc.)
@@ -308,7 +309,7 @@ reorder_zones
   Returns: { reordered: true, order[] }
 ```
 
-Category **"style"**:
+Category **"style"** (v2):
 ```
 change_style (at least one field besides zone_id required)
    style_layer:  string         — switch whole layer ("minimal", "art-deco")
@@ -341,7 +342,7 @@ list_style_layers
   Returns: { layers: [{ id, name, description, preview_url, vibe_tags[] }] }
 ```
 
-Category **"pages"**:
+Category **"pages"** (v2):
 ```
 add_page
   *title:        string         — "Projects", "About", etc.
@@ -360,7 +361,7 @@ update_nav
   Returns: { position, item_count }
 ```
 
-Category **"content"**:
+Category **"content"** (v1; `trigger_explorer` and `trigger_import` are v2 — they depend on the Repo Explorer and HTML Import agents):
 ```
 trigger_explorer
   *url:          string         — git repo URL
@@ -403,7 +404,7 @@ create_project_card
   Returns: { card_id, title }
 ```
 
-Category **"versions"**:
+Category **"versions"** (v2):
 ```
 save_version
   *name:         string         — "v1 — initial layout"
@@ -424,7 +425,7 @@ diff_versions
   Returns: { changes: [{ type: "added"|"removed"|"modified", target, details }] }
 ```
 
-Category **"publish"**:
+Category **"publish"** (v1; `target: "custom_domain"` is v2):
 ```
 publish_site
   *site_id:      string
@@ -437,7 +438,7 @@ export_site
   Returns: { download_url, size, expires_at }
 ```
 
-Category **"guidance"**:
+Category **"guidance"** (v2):
 ```
 suggest
   *description:  string         — what the suggestion is
@@ -453,7 +454,7 @@ highlight
   Returns: { highlighted: true, target }
 ```
 
-Category **"preview"**:
+Category **"preview"** (v2):
 ```
 set_preview
   *viewport:     "desktop" | "tablet" | "mobile" | number
@@ -461,7 +462,7 @@ set_preview
   Returns: { viewport, width }
 ```
 
-**Repo Explorer tools (background):**
+**Repo Explorer tools (background, v2):**
 
 Uses the GitHub REST API for structured data (file listing, repo metadata)
 and `raw.githubusercontent.com` for file content. Unauthenticated: 60
@@ -523,10 +524,12 @@ extract_assets
   Returns: { downloaded: [{ original_url, r2_path }], failed[] }
 ```
 
-### 4.3 Turn Tracker
+### 4.3 Turn Tracker (v1; full background coordination v2)
 
 Coordinates parallel agent phases. Prevents UI updates from firing before
-all agents complete. Same pattern as her-go's `turn.Tracker`:
+all agents complete. Same pattern as her-go's `turn.Tracker`. v1 only
+runs the Guide Agent, so the tracker is trivial; the parallel-phase
+coordination matters once background specialists land in v2.
 
 ```
 User message arrives
@@ -538,7 +541,7 @@ User message arrives
   → Session state updated, UI refreshes
 ```
 
-### 4.4 Chat Input Model
+### 4.4 Chat Input Model (v1)
 
 The chat sidebar uses an **attachment-first** flow. Users compose a
 message with optional file attachments, then send everything together.
@@ -583,7 +586,7 @@ The agent receives ONE message with text + attachments:
 No orphan uploads. No guessing what an image is for. The agent gets
 files AND context in one atomic message.
 
-### 4.5 Trace System
+### 4.5 Trace System (v1)
 
 Agent activity is displayed in the chat as collapsible trace blocks,
 similar to how Claude Code shows thinking and tool calls. This serves
@@ -637,29 +640,36 @@ progress updates as each sub-tool completes.
 
 ### 4.6 AI Cost Model
 
-- **Free tier:** Platform-provided keys with limits (N turns per session,
-  cheaper models via CF AI Gateway routing). Enough to build one portfolio.
-- **Paid tier:** More turns, better models, ongoing access.
-- **BYOK:** Power users bring their own API keys (OpenRouter, OpenAI,
-  Anthropic, Gemini, xAI). Managed via CF AI Gateway for unified routing.
+- **Free tier (v1):** Platform-provided OpenRouter key with limits (N
+  turns per session, cheaper models). Enough to build one portfolio.
+  v1 hardcodes a single provider — OpenRouter — to keep the debug
+  surface small while still allowing model experimentation behind that
+  one API.
+- **Paid tier (v2):** More turns, better models, ongoing access.
+- **BYOK (v2):** Power users bring their own API keys (OpenRouter,
+  OpenAI, Anthropic, Gemini, xAI). Managed via CF AI Gateway for
+  unified routing.
 
-Supported providers: OpenRouter, OpenAI, Anthropic, Google Gemini, xAI.
-CF AI Gateway handles routing, rate limiting, response caching, and
-fallback between providers.
+Supported providers (v2): OpenRouter, OpenAI, Anthropic, Google Gemini,
+xAI. CF AI Gateway handles routing, rate limiting, response caching,
+and fallback between providers. v1 ships with OpenRouter only and no
+CF AI Gateway in front of it.
 
 ### 4.7 Help-Level Dial
 
-A fluid, always-visible slider in the UI:
+A fluid, always-visible slider in the UI. v1 ships two levels — the
+middle "Draft for me" tier is added in v2 only if v1 data shows users
+actually want it.
 
-| Level | AI Behavior |
-|-------|-------------|
-| **Guide me** | Asks questions, suggests structure, highlights areas. Never writes content. Pure coaching. |
-| **Draft for me** | Suggests draft text ("Here's a possible description — edit it to sound like you"). User reviews and modifies. |
-| **Do it for me** | AI writes content, places blocks, structures sections. User reviews and approves. |
+| Level | AI Behavior | Version |
+|-------|-------------|---------|
+| **Guide me** | Asks questions, suggests structure, highlights areas. Never writes content. Pure coaching. | (v1) |
+| **Draft for me** | Suggests draft text ("Here's a possible description — edit it to sound like you"). User reviews and modifies. | (v2) |
+| **Do it for me** | AI writes content, places blocks, structures sections. User reviews and approves. | (v1) |
 
 Adjustable at any point mid-conversation. The AI adapts immediately.
 
-### 4.8 Structured Q&A Tool (`ask_user`)
+### 4.8 Structured Q&A Tool (`ask_user`) (v1)
 
 The primary interaction pattern for the Guide Agent during interviews and
 decision points. Inspired by Claude Code's `AskUserQuestion` tool — the
@@ -801,24 +811,25 @@ button that redirects back to `/edit/:site-id` on the builder app.
 
 ## 7. Editor Experience
 
-### 6.1 Layout
+### 6.1 Layout (v1)
 
 **Desktop:** Three-panel layout.
 - **Left:** Chat sidebar (collapsible). AI guide lives here. Wizard steps
   appear here when active.
-- **Center:** Editor canvas. Zone-based block editor with drag-and-drop.
+- **Center:** Editor canvas. Zone-based block editor. v1 reorders blocks
+  via up/down buttons; drag-and-drop is v2.
 - **Right:** Live preview (real-time updates).
 
 **Mobile/Tablet:** Toggle between editor and preview. Chat is an overlay
 sheet that slides up from the bottom.
 
-### 6.2 Editor ↔ Preview
+### 6.2 Editor ↔ Preview (v1)
 
 Side-by-side on desktop. Changes in the editor reflect instantly in the
 preview. On smaller screens, a toggle switches between full-screen editor
 and full-screen preview.
 
-### 6.3 AI Editing Visualization
+### 6.3 AI Editing Visualization (v2)
 
 When the AI modifies the canvas (via tools like `add_block`, `move_block`,
 `update_block`), changes are **animated in real-time**:
@@ -828,7 +839,10 @@ When the AI modifies the canvas (via tools like `add_block`, `move_block`,
 - Style changes morph smoothly (color/font transitions)
 - The user watches it happen, like someone editing a shared Google Doc
 
-### 6.4 Visual Guidance (Overlay Highlights)
+v1 just rerenders the canvas after each tool call — no animation. The
+animated experience is a v2 polish layer once the core loop is proven.
+
+### 6.4 Visual Guidance (Overlay Highlights) (v2)
 
 The AI can highlight zones and elements with colored overlays:
 
@@ -837,8 +851,9 @@ The AI can highlight zones and elements with colored overlays:
 - Arrow annotations pointing to specific elements
 
 Highlights are non-intrusive and disappear on click or after a timeout.
+Backed by the `highlight` tool in the "guidance" category, which is v2.
 
-### 6.5 Version History (Git-Style Commits)
+### 6.5 Version History (Git-Style Commits) (v2)
 
 Users manually save named versions:
 
@@ -860,28 +875,29 @@ in D1. The AI can:
 ### 6.6 Undo/Redo
 
 Within a session, standard undo/redo (Ctrl+Z / Ctrl+Shift+Z) for
-granular changes. Named versions serve as the persistent, cross-session
-history.
+granular changes. Session-scoped undo/redo ships in (v1). Named versions
+that serve as persistent, cross-session history are (v2).
 
 ---
 
 ## 8. Zone & Block Architecture
 
-### 7.1 Zones
+### 7.1 Zones (v1)
 
 Zones are the top-level layout containers. They define **semantic regions**
 of the portfolio (hero, projects, about, contact, etc.). Each zone:
 
 - Has a numeric ID (for AI addressability: "Place this in zone 3")
 - Uses CSS Grid internally
-- Can be reordered via drag-and-drop
+- Can be reordered (v1: up/down buttons; v2: drag-and-drop)
 - Can be created by the user or AI (custom zones)
 - Has its own style overrides (background, padding, max-width)
 
 Templates define default zones, but users can add, remove, and reorder
-freely.
+freely. Zones are the fundamental layout primitive — the AI must be
+able to add, remove, and reorder them from v1.
 
-### 7.2 Blocks
+### 7.2 Blocks (v1)
 
 Blocks are the content units inside zones. Each block has:
 
@@ -889,7 +905,7 @@ Blocks are the content units inside zones. Each block has:
 - A **semantic size**: S, M, or L
 - Content-specific properties (text content, image URL, gallery items, etc.)
 
-### 7.3 Responsive Grid (Semantic Sizing)
+### 7.3 Responsive Grid (Semantic Sizing) (v1)
 
 Blocks use abstract sizes that map to CSS Grid fractions per breakpoint:
 
@@ -908,35 +924,49 @@ Users never think about breakpoints. They say "this is a small thing" or
 "this is a big thing" and the grid handles the rest. The AI understands
 these sizes natively.
 
-### 7.4 MVP Block Types (~20)
+### 7.4 Block Types
+
+v1 ships seven block types — the smallest set that lets a user build a
+recognizable portfolio. The remaining types ship in v2 once the core
+loop is proven.
 
 **Content Essentials:**
-- Hero / header
-- Text block (rich text)
-- Image (single, with caption)
-- Image gallery (grid or carousel)
-- Project card (thumbnail, title, description, tags, links)
-- Skills / tags list
-- Timeline / experience
-- Contact form
-- Social links
-- Footer
+- Hero / header (v1)
+- Text block (rich text) (v1)
+- Image (single, with caption) (v1)
+- Image gallery (grid or carousel) (v2)
+- Project card (thumbnail, title, description, tags, links) (v1)
+- Skills / tags list (v2)
+- Timeline / experience (v2)
+- Contact form (v2)
+- Social links (v1)
+- Footer (v1)
+- Spacer (v1) — empty block for layout breathing room. Takes S/M/L
+  sizing like any other block. Optional `as_divider: true` flag renders
+  it as a horizontal rule. Lets users and the AI compose asymmetric
+  layouts and vertical rhythm without forcing every cell to have
+  content.
 
 **Media:**
-- Video embed (YouTube, Vimeo, direct)
-- Audio player (SoundCloud, Spotify, direct MP3)
-- PDF viewer (inline)
-- Code snippet (syntax highlighted)
-- Testimonial / quote
-- Stats / metrics display
+- Video embed (YouTube, Vimeo, direct) (v2)
+- Audio player (SoundCloud, Spotify, direct MP3) (v2)
+- PDF viewer (inline) (v2)
+- Code snippet (syntax highlighted) (v2)
+- Testimonial / quote (v2)
+- Stats / metrics display (v2)
 
 **Interactive:**
-- Before/after slider (for designers)
-- 3D model viewer (GLB/GLTF)
-- Interactive map
-- Embedded iframe (for live demos)
+- Before/after slider (for designers) (v2)
+- 3D model viewer (GLB/GLTF) (v2 — viewer only; GLB/GLTF file
+  ingestion is v3)
+- Interactive map (v2)
+- Embedded iframe (for live demos) (v2)
 
-### 7.5 Multi-Page Support
+### 7.5 Multi-Page Support (v2)
+
+v1 is single-page only — anchor nav (`#projects`, `#about`, `#contact`)
+covers most portfolios and removes a whole class of routing, nav, and
+SEO complexity from the validation phase.
 
 Portfolios can have multiple pages, each with its own set of zones and
 blocks. Pages are tiered by plan:
@@ -959,11 +989,11 @@ create, rename, and reorder pages via tools.
 Every portfolio has a top nav (header) and bottom nav (footer). Nav
 items can be:
 
-| Type | Example | Behavior |
-|------|---------|----------|
-| **Internal page** | `/projects` | Navigate within the portfolio |
-| **Anchor link** | `#skills` | Scroll to a section on the current page |
-| **External link** | `ko-fi.com/jane` | Open in new tab |
+| Type | Example | Behavior | Version |
+|------|---------|----------|---------|
+| **Internal page** | `/projects` | Navigate within the portfolio | (v2) |
+| **Anchor link** | `#skills` | Scroll to a section on the current page | (v1) |
+| **External link** | `ko-fi.com/jane` | Open in new tab | (v1) |
 
 **Responsive behavior:**
 - Desktop: horizontal nav bar with all items visible
@@ -1002,13 +1032,14 @@ items can be:
 ```
 
 The footer also includes a social icons row and the watermark/attribution
-line (removable on paid plans).
+line (v2 — removable on paid plans). v1 has no watermark and no paid
+plans, so the footer just shows attribution if anything.
 
 ---
 
 ## 9. Template & Style System
 
-### 8.1 Architecture
+### 8.1 Architecture (v1)
 
 Templates are composed of two independent layers:
 
@@ -1025,43 +1056,48 @@ are independent axes.
 
 ### 8.2 Starter Templates (Structural)
 
-Curated, profession-specific starting points:
+Curated, profession-specific starting points. v1 ships only Generalist
+and starts every user there — no template picker UI in v1; the AI
+evolves the layout through conversation. The rest land in v2.
 
-- Developer (project grid, tech stack, GitHub activity)
-- Photographer (full-bleed gallery, series view, lightbox)
-- Visual Artist (portfolio grid, process documentation, exhibition list)
-- Designer (case study layout, before/after, brand showcase)
-- Writer (reading-focused, byline cards, publication list)
-- Musician (discography timeline, audio player, tour dates)
-- Game Dev (screenshot gallery, trailer embed, download links)
-- Generalist (flexible multi-purpose layout)
-- Minimal (single-page, text-forward)
-- Creative (experimental layout, large typography, bold colors)
+- Developer (project grid, tech stack, GitHub activity) (v2)
+- Photographer (full-bleed gallery, series view, lightbox) (v2)
+- Visual Artist (portfolio grid, process documentation, exhibition list) (v2)
+- Designer (case study layout, before/after, brand showcase) (v2)
+- Writer (reading-focused, byline cards, publication list) (v2)
+- Musician (discography timeline, audio player, tour dates) (v2)
+- Game Dev (screenshot gallery, trailer embed, download links) (v2)
+- Generalist (flexible multi-purpose layout) (v1) — default zones:
+  Hero, Projects, About, Contact, Footer. Zones are fully manipulatable
+  from day one; the default set is a starting point, not a constraint.
+- Minimal (single-page, text-forward) (v2)
+- Creative (experimental layout, large typography, bold colors) (v2)
 
 ### 8.3 Style Layers
 
-Independent aesthetic presets:
+Independent aesthetic presets. v1 ships only Minimal — same logic as
+the structural templates: validate the loop before expanding the menu.
 
-- Minimal — clean, lots of whitespace, system fonts
-- Bold — large type, high contrast, strong colors
-- Art Deco — geometric patterns, gold accents, serif fonts
-- Brutalist — raw, monospace, exposed grid
-- Soft — rounded corners, pastels, gentle gradients
-- Dark — dark backgrounds, light text, accent colors
-- Nature — earth tones, organic shapes, textured backgrounds
-- Retro — pixel fonts, CRT effects, neon accents
-- Professional — neutral palette, conservative typography
-- Playful — bright colors, hand-drawn elements, bouncy animations
+- Minimal — clean, lots of whitespace, system fonts (v1)
+- Bold — large type, high contrast, strong colors (v2)
+- Art Deco — geometric patterns, gold accents, serif fonts (v2)
+- Brutalist — raw, monospace, exposed grid (v2)
+- Soft — rounded corners, pastels, gentle gradients (v2)
+- Dark — dark backgrounds, light text, accent colors (v2)
+- Nature — earth tones, organic shapes, textured backgrounds (v2)
+- Retro — pixel fonts, CRT effects, neon accents (v2)
+- Professional — neutral palette, conservative typography (v2)
+- Playful — bright colors, hand-drawn elements, bouncy animations (v2)
 
-### 8.4 Custom Fonts
+### 8.4 Custom Fonts (v2)
 
 A curated library of web fonts users can choose from, organized by vibe.
 Loaded via `@fontsource` or similar for self-hosting (no Google Fonts
 dependency in output).
 
-### 8.5 Custom Components
+### 8.5 Custom Components (v2+)
 
-**Deferred to v2+.** MVP ships with the built-in block library only.
+**Deferred to v2+.** v1 ships with the built-in block library only.
 Future: users can create custom blocks in Svelte or HTML/CSS/JS.
 
 ---
@@ -1072,34 +1108,37 @@ Future: users can create custom blocks in Svelte or HTML/CSS/JS.
 
 Two paths, both producing the same output (structured project cards):
 
-**Path A: Bulk Upload + Background Agent (power users)**
+**Path A: Bulk Upload + Background Agent (power users) (v2)**
 1. User drops files or pastes a repo URL
 2. Upload goes to R2
 3. Background Repo Explorer or file parser runs asynchronously
 4. Produces structured project cards in D1
 5. Guide Agent notifies user: "I found 5 projects in your repo"
 
-**Path B: Conversational Extraction (beginners)**
+**Path B: Conversational Extraction (beginners) (v1)**
 1. AI interviews the user about each project one at a time
-2. User pastes links, uploads files, or just describes their work
+2. User pastes links, uploads files (images), or just describes their work
 3. AI builds project cards incrementally from conversation
 4. More guided, less overwhelming
 
-### 9.2 Supported File Formats (MVP)
+v1 ships Path B only. Bulk upload and repo URL ingestion ride on the
+Repo Explorer / HTML Import agents, which are v2.
 
-| Format | Parser |
-|--------|--------|
-| Images (PNG, JPG, SVG, WebP) | Direct upload to R2, metadata extraction |
-| Markdown / README | Parse to structured text, extract headings and links |
-| HTML | AI Import Agent analysis |
-| Plain text | Direct ingest |
-| PDF | Text extraction for content |
-| Git repo URL | Repo Explorer Agent (README + root files + manifests) |
+### 9.2 Supported File Formats
 
-Office formats (DOCX, PPTX, XLSX) and media formats (audio, video, 3D)
-are deferred to later phases.
+| Format | Parser | Version |
+|--------|--------|---------|
+| Images (PNG, JPG, SVG, WebP) | Direct upload to R2, metadata extraction | (v1) |
+| Markdown / README | Parse to structured text, extract headings and links | (v2) |
+| HTML | AI Import Agent analysis | (v2) |
+| Plain text | Direct ingest | (v2) |
+| PDF | Text extraction for content | (v2) |
+| Git repo URL | Repo Explorer Agent (README + root files + manifests) | (v2) |
 
-### 9.3 Repo Explorer Behavior
+Office formats (DOCX, PPTX, XLSX) (v3) and media formats (audio, video,
+3D — GLB/GLTF) (v3) are deferred to later phases.
+
+### 9.3 Repo Explorer Behavior (v2)
 
 For a git repo URL, the agent reads:
 - `README.md` — what the project is
@@ -1112,7 +1151,7 @@ For a git repo URL, the agent reads:
 Does NOT read source code, test files, or CI configs. The goal is *what
 the project does and why it matters*, not how the code works.
 
-### 9.4 HTML Import Behavior
+### 9.4 HTML Import Behavior (v2)
 
 For external HTML (existing sites, exported pages):
 1. Fetch the page
@@ -1121,10 +1160,12 @@ For external HTML (existing sites, exported pages):
 4. Download and store referenced assets
 5. Present the mapping to the user for review and adjustment
 
-### 9.5 Project Cards
+### 9.5 Project Cards (v1)
 
 The universal intermediate format. Every ingestion path produces project
-cards stored in D1:
+cards stored in D1. v1 only writes cards via the conversational path
+(`source: "manual" | "conversation"`); the `repo_explorer` and
+`html_import` sources land with their respective agents in v2.
 
 ```json
 {
@@ -1148,7 +1189,7 @@ cards stored in D1:
 
 ## 11. Output Sites
 
-### 10.1 Core Principle: Code Translates Data, Never Describes It
+### 10.1 Core Principle: Code Translates Data, Never Describes It (v1)
 
 **The manifest is the portfolio.** Components are renderers, not
 containers. All content — every title, description, image path, tag, and
@@ -1169,21 +1210,28 @@ users who want to hand-edit JSON can.
 
 ### 10.2 Two Rendering Modes
 
-| Mode | When | How |
-|------|------|-----|
-| **SSR (hosted sites)** | User's site is hosted by us (subdomain or custom domain) | Worker reads manifest from D1/R2 → Astro renders on request → cached at edge |
-| **SSG (exported sites)** | User downloads .zip or self-deploys | Manifest baked into static HTML at build time → no server needed |
+| Mode | When | How | Version |
+|------|------|-----|---------|
+| **SSR (hosted sites)** | User's site is hosted by us (subdomain or custom domain) | Worker reads manifest from D1/R2 → Astro renders on request → cached at edge | (v2) |
+| **SSG (exported sites)** | User downloads .zip or self-deploys | Manifest baked into static HTML at build time → no server needed | (v1) |
 
 Both modes use the same Astro components and Svelte islands. The only
 difference is where the manifest comes from (D1 vs. baked-in).
 
-**Caching strategy for SSR (stale-while-revalidate):**
+> [agent: confirm v1 or v2?] — v1 spec lists "Astro SSG only" under
+> Output but also describes hosted sites as "Worker reads manifest
+> from D1, renders Astro, caches at edge" with pre-warm on publish.
+> Read here as: v1 hosted subdomain sites are built at publish time
+> to static files in R2 and edge-cached; per-request SSR with
+> stale-while-revalidate is v2.
+
+**Caching strategy for SSR (stale-while-revalidate) (v2):**
 - First request: render from manifest, cache at the edge
 - Subsequent requests: serve cached version immediately
 - When manifest changes (user publishes): revalidate in the background
 - Visitors always get near-static speed, edits propagate within seconds
 
-### 10.3 Manifest Structure
+### 10.3 Manifest Structure (v1)
 
 ```json
 {
@@ -1254,7 +1302,7 @@ markup, no framework syntax. A non-technical user can scan this and
 understand what maps to what — or better, use the web UI and never see
 it at all.
 
-### 10.4 What Ships (Exported)
+### 10.4 What Ships (Exported) (v1)
 
 ```
 dist/
@@ -1274,19 +1322,21 @@ dist/
 
 ### 10.5 Interactive Islands
 
-Only components that need JavaScript get hydrated:
+Only components that need JavaScript get hydrated. None of the v1 block
+types require JS, so v1 portfolios ship zero JavaScript by default. The
+islands below land alongside their corresponding block types in v2.
 
-- **Photo gallery** — carousel, lightbox, lazy loading
-- **Contact form** — validation, submission (Cloudflare Turnstile for spam)
-- **Audio player** — play/pause, progress, playlist
-- **Before/after slider** — drag handle comparison
-- **3D model viewer** — orbit controls, zoom
-- **Dark mode toggle** — theme switching
+- **Photo gallery** — carousel, lightbox, lazy loading (v2)
+- **Contact form** — validation, submission (Cloudflare Turnstile for spam) (v2)
+- **Audio player** — play/pause, progress, playlist (v2)
+- **Before/after slider** — drag handle comparison (v2)
+- **3D model viewer** — orbit controls, zoom (v2)
+- **Dark mode toggle** — theme switching (v2)
 
 Everything else is static HTML. A portfolio with no interactive blocks
 ships **zero JavaScript**.
 
-### 10.6 Single-File Export
+### 10.6 Single-File Export (v2)
 
 For users who want to add a portfolio to an existing website, the
 `astro-single-file` integration can inline CSS into a single HTML file.
@@ -1298,6 +1348,11 @@ This is an optional export format.
 Output sites must be optimized for AI consumption, not just human viewing.
 
 **Layer 1: Cloudflare Markdown for Agents (automatic)**
+
+> [agent: confirm v1 or v2?] — feature is automatic at the CF zone
+> level on Pro+ plans and SSL for SaaS. v1 only ships the subdomain
+> path; SSL for SaaS is v2. If our v1 zone is on Pro+, this layer is
+> effectively v1; otherwise treat as v2 alongside custom domains.
 
 Cloudflare's zone-level feature (launched March 2026). When an AI agent
 sends `Accept: text/markdown`, CF's edge auto-converts the HTML to clean
@@ -1314,7 +1369,7 @@ good for the AI editor agent, AND good for Markdown conversion. Clean
 `<h1>`-`<h3>` hierarchy with meaningful `<section>` elements means the
 auto-converted Markdown is structured and readable.
 
-**Layer 2: `llms.txt` (auto-generated at build time)**
+**Layer 2: `llms.txt` (auto-generated at build time) (v1)**
 
 Following the [llms.txt standard](https://llmstxt.org/), every output site
 includes a `/llms.txt` file — a curated Markdown index of the portfolio:
@@ -1339,7 +1394,7 @@ includes a `/llms.txt` file — a curated Markdown index of the portfolio:
 - GitHub: github.com/janedoe
 ```
 
-**Layer 3: `llms-full.txt` (auto-generated at build time)**
+**Layer 3: `llms-full.txt` (auto-generated at build time) (v1)**
 
 A single-file dump of ALL portfolio content — every project description,
 skill, experience entry, and bio concatenated into one Markdown document.
@@ -1359,29 +1414,32 @@ request.
 
 ## 12. Deployment Options
 
-### 10.1 Download Bundle (Always Free)
+### 10.1 Download Bundle (Always Free) (v1)
 
 Export as a `.zip` containing the full `dist/` folder plus `manifest.json`.
-User deploys wherever they want. We provide step-by-step guides for:
+User deploys wherever they want. v1 ships the bundle plus a docs page;
+the per-platform deploy wizard below is v2.
 
 - Cloudflare Pages/Workers
 - Vercel
 - Netlify
 - GitHub Pages
 
-### 10.2 Managed Hosting (Paid: ~$3/mo)
+### 10.2 Managed Hosting (Subdomain) (v1)
 
 We host the site on R2, served via a Worker. User gets a subdomain:
-`you.portfoliobuilder.com` (domain TBD).
+`you.portfoliobuilder.com` (domain TBD). v1 has no billing — managed
+hosting is free for everyone until the loop is proven. The ~$3/mo
+price is a v2 plan once Stripe lands.
 
-### 10.3 Custom Domain (Paid: ~$2/mo)
+### 10.3 Custom Domain (v2)
 
-Via Cloudflare for SaaS. User CNAMEs their domain to our zone. We handle
-TLS certificate provisioning and renewal automatically.
+Paid: ~$2/mo. Via Cloudflare for SaaS. User CNAMEs their domain to our
+zone. We handle TLS certificate provisioning and renewal automatically.
 
 Pricing: first 100 custom hostnames free to us ($0.10/hostname after that).
 
-### 10.4 Deploy Wizard
+### 10.4 Deploy Wizard (v2)
 
 A guided flow that walks users through deploying to their platform of
 choice:
@@ -1390,7 +1448,7 @@ choice:
 2. Step-by-step instructions with screenshots
 3. Where possible, API integration for one-click deploy
 
-### 10.5 Domain Finder (Built-In)
+### 10.5 Domain Finder (Built-In) (v2)
 
 Forage-style domain discovery integrated into the publish flow:
 
@@ -1405,47 +1463,58 @@ Forage-style domain discovery integrated into the publish flow:
 
 ### 11.1 Cloudflare Services
 
-| Service | Role |
-|---------|------|
-| **Workers** | Single entry point for all requests. Serves builder app, API, and hosted portfolio sites. |
-| **Durable Objects** | Per-session editing state. Active editor state, undo stack, AI conversation context. Hibernates when inactive. |
-| **D1** | All queryable relational data. One database (or per-tenant if needed at scale). |
-| **R2** | Binary blob storage. User uploads, generated sites, export bundles. Zero egress fees. |
-| **CF for SaaS** | Custom domain routing. Worker reads hostname → looks up site → serves from R2. |
-| **CF AI Gateway** | AI provider routing, rate limiting, response caching, fallback. |
+| Service | Role | Version |
+|---------|------|---------|
+| **Workers** | Single entry point for all requests. Serves builder app, API, and hosted portfolio sites. | (v1) |
+| **Durable Objects** | Per-session editing state. Active editor state, undo stack, AI conversation context. Hibernates when inactive. | (v2) |
+| **D1** | All queryable relational data. One database (or per-tenant if needed at scale). | (v1) |
+| **R2** | Binary blob storage. User uploads, generated sites, export bundles. Zero egress fees. | (v1) |
+| **CF for SaaS** | Custom domain routing. Worker reads hostname → looks up site → serves from R2. | (v2) |
+| **CF AI Gateway** | AI provider routing, rate limiting, response caching, fallback. | (v2) |
+
+v1 keeps editor session state in D1 + an encrypted session cookie. DOs
+arrive in v2 only if scale demands them.
 
 ### 11.2 D1 Schema (Core Tables)
 
+Tables marked `-- v2` aren't created in v1; their features ship later.
+
 ```sql
 -- Users & Auth
-users (id, workos_id, email, display_name, created_at, updated_at)
-api_keys (id, user_id, provider, encrypted_key, created_at)
+users (id, workos_id, email, display_name, created_at, updated_at)         -- v1
+api_keys (id, user_id, provider, encrypted_key, created_at)                -- v2 (BYOK)
 
 -- Sites & Content
-sites (id, user_id, name, slug, template_id, style_layer_id, status, published_at)
-zones (id, site_id, order, type, label, style_overrides)
-blocks (id, zone_id, order, type, size, content_json, style_overrides)
-project_cards (id, user_id, title, description, stack, links, media, tags, source)
+sites (id, user_id, name, slug, template_id, style_layer_id, status, published_at)  -- v1
+zones (id, site_id, order, type, label, style_overrides)                   -- v1
+blocks (id, zone_id, order, type, size, content_json, style_overrides)     -- v1
+project_cards (id, user_id, title, description, stack, links, media, tags, source)  -- v1
 
 -- Versions
-versions (id, site_id, name, snapshot_json, created_at)
+versions (id, site_id, name, snapshot_json, created_at)                    -- v2 (named history)
 
 -- AI
-ai_conversations (id, site_id, messages_json, help_level, created_at, updated_at)
+ai_conversations (id, site_id, messages_json, help_level, created_at, updated_at)   -- v1
 
 -- Billing
-subscriptions (id, user_id, stripe_customer_id, stripe_subscription_id, status, features)
-purchases (id, user_id, type, stripe_payment_id, created_at)
+subscriptions (id, user_id, stripe_customer_id, stripe_subscription_id, status, features)  -- v2
+purchases (id, user_id, type, stripe_payment_id, created_at)               -- v2
 
 -- Hosting & Domains
-domain_mappings (id, site_id, hostname, cf_hostname_id, status, created_at)
-hosted_sites (id, site_id, r2_prefix, last_deployed_at)
+domain_mappings (id, site_id, hostname, cf_hostname_id, status, created_at)  -- v2 (custom domains)
+hosted_sites (id, site_id, r2_prefix, last_deployed_at)                    -- v1
 
 -- Config
-style_configs (id, site_id, fonts, colors, spacing, custom_css)
+style_configs (id, site_id, fonts, colors, spacing, custom_css)            -- v1
+
+-- Analytics & instrumentation (v1 — load-bearing for validation)
+-- A few event tables for funnel events, agent metrics (turn counts,
+-- tool call counts, tool failures, reply latency, dead-ends), and
+-- AI cost tracking. Backed by Cloudflare Analytics Engine + D1.
+-- Exact column shape TBD; see §18 for the v1 instrumentation list.
 ```
 
-### 11.3 R2 Structure
+### 11.3 R2 Structure (v1)
 
 ```
 r2-bucket/
@@ -1455,7 +1524,7 @@ r2-bucket/
 └── assets/{user_id}/                  # Processed/optimized assets
 ```
 
-### 11.4 Durable Object (Editor Session)
+### 11.4 Durable Object (Editor Session) (v2)
 
 One DO per active editing session. Contains:
 
@@ -1467,18 +1536,21 @@ One DO per active editing session. Contains:
 Hibernates when the user closes the editor. Reconstituted from D1 on
 next session open.
 
+v1 keeps this state in D1 directly + an encrypted session cookie — DOs
+only land in v2 if scale demands them.
+
 ---
 
 ## 14. Auth & Identity
 
-### 12.1 Provider: WorkOS AuthKit
+### 12.1 Provider: WorkOS AuthKit (v1)
 
 - **1,000,000 MAUs free** — covers the project for years
 - Native Cloudflare Workers support (Fetch API + Web Crypto, no Node deps)
 - Google OAuth as primary sign-in method
 - Additional social providers can be added via WorkOS dashboard
 
-### 12.2 Flow
+### 12.2 Flow (v1)
 
 1. User clicks "Sign in with Google"
 2. Popup/redirect to Google OAuth (handled by WorkOS AuthKit)
@@ -1490,19 +1562,25 @@ next session open.
 
 Simple role model:
 
-- **Free user** — can build, export (with watermark), limited AI turns
-- **Paid user** — features unlocked based on à la carte purchases
-- **Admin** — platform management (internal only)
+- **Free user (v1)** — can build, export, limited AI turns. v1 has no
+  watermark and no rate-limiting tiers; everyone is on this role.
+- **Paid user (v2)** — features unlocked based on subscription / à la
+  carte purchases.
+- **Admin (v1)** — platform management (internal only).
 
 ---
 
 ## 15. Billing & Pricing
 
-### 13.1 Model: Freemium + À La Carte
+**Entire section: (v2).** v1 has no billing — the product is free for
+everyone until the loop is proven and v1 acceptance gates pass. The
+shape below is the planned v2 model.
+
+### 13.1 Model: Freemium + À La Carte (v2)
 
 Users pick what they want. No forced bundles.
 
-### 13.2 Pricing
+### 13.2 Pricing (v2)
 
 | Feature | Price | Type |
 |---------|-------|------|
@@ -1514,7 +1592,7 @@ Users pick what they want. No forced bundles.
 | Analytics | ~$1/mo | Subscription |
 | Domain finder | Free (registration cost is user's) | — |
 
-### 13.3 Implementation
+### 13.3 Implementation (v2)
 
 - Stripe for all payments (subscriptions + one-time)
 - Stripe Customer Portal for self-service management
@@ -1524,32 +1602,37 @@ Users pick what they want. No forced bundles.
 
 ## 16. SEO & Accessibility
 
-### 14.1 SEO (Full Suite, Auto-Generated)
+### 14.1 SEO (Auto-Generated)
 
-Every published portfolio includes:
+v1 ships the minimal-but-correct slice; the polish layers (JSON-LD, AI
+coaching, SEO score panel, AI alt text) land in v2.
 
-- **Meta tags** — title, description (AI-optimized from content)
-- **Open Graph** — social preview cards with auto-generated images
-- **JSON-LD** — structured data (Person, CreativeWork, WebSite schemas)
-- **sitemap.xml** — auto-generated from page structure
-- **robots.txt** — sensible defaults
-- **Canonical URLs** — proper canonical for custom domains
-- **Alt text** — AI suggests alt text for all images
+- **Meta tags** — `<title>`, `<meta description>` (v1)
+- **Open Graph** — OG tags (v1); auto-generated social preview images (v2)
+- **JSON-LD** — structured data (Person, CreativeWork, WebSite schemas) (v2)
+- **sitemap.xml** — auto-generated from page structure (v1)
+- **robots.txt** — sensible defaults (v1)
+- **Canonical URLs** — proper canonical for hosted/custom domains (v1)
+- **Alt text** — AI suggests alt text for all images (v2); v1 prompts
+  the user to write alt text for any uploaded image
 - **AI keyword coaching** — "Your project description could rank better if
-  you mentioned these terms"
-- **SEO score** — built-in checker in the editor
+  you mentioned these terms" (v2)
+- **SEO score** — built-in checker in the editor (v2)
 
 ### 14.2 Accessibility (WCAG AA + Active Checker)
 
-Accessibility is **load-bearing infrastructure**, not a checkbox:
+Accessibility is **load-bearing infrastructure**, not a checkbox. v1
+enforces a11y in components but doesn't ship a checker UI in the editor
+yet — that comes with the editor surface in v2.
 
-- All output sites meet **WCAG 2.1 AA** by default
-- bits-ui provides accessible primitives (ARIA, keyboard nav, focus management)
-- Semantic HTML throughout (proper headings, landmarks, labels)
-- Color contrast validation in the editor
-- Alt text prompts for every image ("This image needs a description")
-- Keyboard navigation for all interactive components
-- Screen reader testing as part of QA
+- All output sites meet **WCAG 2.1 AA** by default (v1)
+- bits-ui provides accessible primitives (ARIA, keyboard nav, focus management) (v1)
+- Semantic HTML throughout (proper headings, landmarks, labels) (v1)
+- Color contrast validation in the editor (v2)
+- Alt text prompts for every image ("This image needs a description") (v1)
+- Keyboard navigation for all interactive components (v1)
+- Screen reader testing as part of QA (v1)
+- A11y checker UI in the editor (v2)
 
 **Dual purpose:** The accessibility tree doubles as the AI agent's
 navigation system. A well-structured a11y tree gives the agent a flat,
@@ -1560,23 +1643,23 @@ reason about than raw HTML.
 
 ```
 BUILDER APP (SaaS editor)
-├─ Framework:     Astro 6 + Svelte 5 (islands architecture)
-├─ UI Primitives: bits-ui v2 (headless, accessible, Svelte 5 native)
-├─ Styling:       Tailwind CSS v4 (Vite plugin, CSS-based config)
-├─ Validation:    Zod v4 (manifest schemas, API boundaries, tool params)
-├─ Auth:          WorkOS AuthKit (1M free MAU, Google OAuth)
-├─ Payments:      Stripe (subscriptions + one-time)
-├─ AI Gateway:    Cloudflare AI Gateway
+├─ Framework:     Astro 6 + Svelte 5 (islands architecture)         (v1)
+├─ UI Primitives: bits-ui v2 (headless, accessible, Svelte 5 native) (v1)
+├─ Styling:       Tailwind CSS v4 (Vite plugin, CSS-based config)    (v1)
+├─ Validation:    Zod v4 (manifest schemas, API boundaries, tool params) (v1)
+├─ Auth:          WorkOS AuthKit (1M free MAU, Google OAuth)         (v1)
+├─ Payments:      Stripe (subscriptions + one-time)                  (v2)
+├─ AI Gateway:    Cloudflare AI Gateway                              (v2)
 
 BACKEND (Cloudflare)
-├─ Compute:       Cloudflare Workers (not Pages)
-├─ State:         Durable Objects (per-session, SQLite backend)
-├─ Database:      D1 (relational data) via Drizzle ORM
-├─ Storage:       R2 (binary blobs, zero egress)
-├─ Domains:       Cloudflare for SaaS (custom hostnames)
-├─ Rate Limiting: Durable Objects (per-user)
+├─ Compute:       Cloudflare Workers (not Pages)                     (v1)
+├─ State:         Durable Objects (per-session, SQLite backend)      (v2 — v1 uses D1 + session cookies)
+├─ Database:      D1 (relational data) via Drizzle ORM               (v1)
+├─ Storage:       R2 (binary blobs, zero egress)                     (v1)
+├─ Domains:       Cloudflare for SaaS (custom hostnames)             (v2)
+├─ Rate Limiting: Durable Objects (per-user)                         (v2)
 
-TOOLING
+TOOLING                                                              (v1)
 ├─ Package Mgr:   pnpm
 ├─ Language:      TypeScript 5.9 (strict mode)
 ├─ ORM:           Drizzle (sqlite dialect, D1 driver)
@@ -1585,18 +1668,22 @@ TOOLING
 ├─ Linting:       ESLint
 
 AI AGENT SYSTEM
-├─ Pattern:       Multi-agent (driver + specialists, her-go inspired)
-├─ Guide Agent:   Sync, user-facing chat
-├─ Specialists:   Async background (Repo Explorer, HTML Import, Content Advisor)
-├─ Tool Registry: Auto-registering, per-agent active sets
-├─ Providers:     OpenRouter, OpenAI, Anthropic, Gemini, xAI (via CF AI Gateway)
+├─ Pattern:       Multi-agent (driver + specialists, her-go inspired) (v1 driver only; v2 specialists)
+├─ Guide Agent:   Sync, user-facing chat                             (v1)
+├─ Specialists:   Async background (Repo Explorer, HTML Import, Content Advisor) (v2)
+├─ Tool Registry: Auto-registering, per-agent active sets            (v1)
+├─ Providers:     OpenRouter (v1, single integration). OpenAI,
+│                 Anthropic, Gemini, xAI (v2, via CF AI Gateway).
+│                 BYOK is v2.
 
 OUTPUT SITES (generated portfolios)
-├─ Framework:     Astro SSG (static)
-├─ Islands:       Svelte 5 (interactive components only)
-├─ Styling:       Tailwind CSS (compiled + purged)
-├─ Export:        Static .zip or hosted on R2
-├─ Single-file:   Optional via astro-single-file integration
+├─ Framework:     Astro SSG (static)                                 (v1)
+├─ Islands:       Svelte 5 (interactive components only)             (v1 capability; concrete islands ship v2 with their block types)
+├─ Styling:       Tailwind CSS (compiled + purged)                   (v1)
+├─ Export:        Static .zip                                        (v1)
+├─                Hosted on R2 via subdomain                         (v1)
+├─                Custom domain via CF for SaaS                      (v2)
+├─ Single-file:   Optional via astro-single-file integration         (v2)
 ```
 
 ---
