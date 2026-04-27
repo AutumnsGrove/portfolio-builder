@@ -1,0 +1,149 @@
+{
+  "version": "1.0",
+  "site": {
+    "title": "Jane Doe — Software Engineer",
+    "description": "Full-stack developer specializing in distributed systems and developer tools",
+    "slug": "janedoe",
+    "template": "generalist",
+    "style_layer": "minimal"
+  },
+  "style": {
+    "fonts": {
+      "heading": "Outfit",
+      "body": "Lexend"
+    },
+    "colors": {
+      "primary": "#2563eb",
+      "background": "#ffffff",
+      "text": "#1f2937"
+    },
+    "spacing": "comfortable",
+    "custom_css": ""
+  },
+  "zones": [
+    {
+      "id": 1,
+      "label": "Hero",
+      "order": 0,
+      "blocks": [
+        {
+          "id": "123e4567-e89b-12d3-a456-426614174001",
+          "type": "hero",
+          "size": "L",
+          "content": {
+            "type": "hero",
+            "data": {
+              "heading": "Hi, I'm Jane",
+              "subheading": "I build tools for developers",
+              "image": "r2://uploads/janedoe/hero.jpg",
+              "cta": {
+                "text": "See my work",
+                "href": "#projects"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "label": "Projects",
+      "order": 1,
+      "blocks": [
+        {
+          "id": "123e4567-e89b-12d3-a456-426614174002",
+          "type": "text",
+          "size": "L",
+          "content": {
+            "type": "text",
+            "data": {
+              "markdown": "## My Work\n\nHere are some projects I've built."
+            }
+          }
+        },
+        {
+          "id": "123e4567-e89b-12d3-a456-426614174003",
+          "type": "project-card",
+          "size": "M",
+          "content": {
+            "type": "project-card",
+            "data": {
+              "project_id": "550e8400-e29b-41d4-a716-446655440000"
+            }
+          }
+        },
+        {
+          "id": "123e4567-e89b-12d3-a456-426614174004",
+          "type": "spacer",
+          "size": "L",
+          "content": {
+            "type": "spacer",
+            "data": {
+              "as_divider": true
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "label": "Contact",
+      "order": 2,
+      "blocks": [
+        {
+          "id": "123e4567-e89b-12d3-a456-426614174005",
+          "type": "social-links",
+          "size": "M",
+          "content": {
+            "type": "social-links",
+            "data": {
+              "links": [
+                {
+                  "platform": "GitHub",
+                  "url": "https://github.com/janedoe"
+                },
+                {
+                  "platform": "LinkedIn",
+                  "url": "https://linkedin.com/in/janedoe"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "label": "Footer",
+      "order": 3,
+      "blocks": [
+        {
+          "id": "123e4567-e89b-12d3-a456-426614174006",
+          "type": "footer",
+          "size": "L",
+          "content": {
+            "type": "footer",
+            "data": {
+              "text": "© 2024 Jane Doe",
+              "links": [
+                {
+                  "label": "Privacy",
+                  "href": "/privacy"
+                },
+                {
+                  "label": "Terms",
+                  "href": "/terms"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "meta": {
+    "og_image": "r2://assets/janedoe/og.png",
+    "keywords": ["software engineer", "full-stack", "cloudflare"],
+    "canonical": "https://janedoe.portfoliobuilder.com"
+  }
+}
