@@ -87,6 +87,13 @@ function canSubmit(): boolean {
         {question.question}
       </p>
 
+      <!-- Context (why we're asking) -->
+      {#if question.context}
+        <p class="text-xs text-graphite">
+          {question.context}
+        </p>
+      {/if}
+
       <!-- Options -->
       <div class="space-y-2">
         {#each question.options as option}

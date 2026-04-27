@@ -67,6 +67,7 @@ export interface Tool {
  */
 export interface StructuredQuestion {
   question: string; // The question text
+  context?: string; // Optional explanation of why we're asking
   header?: string; // Optional section header
   options: Array<{
     label: string; // Option text (e.g., "Software / code")

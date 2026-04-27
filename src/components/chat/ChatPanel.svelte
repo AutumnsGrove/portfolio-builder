@@ -38,6 +38,15 @@ let messages = $state<Message[]>([
 let isAiThinking = $state(false);
 let currentQuestions = $state<any>(null);
 
+// Progressive thinking messages
+const thinkingMessages = [
+  'Reading your work…',
+  'Thinking through options…',
+  'Crafting suggestions…',
+];
+let thinkingMessageIndex = $state(0);
+let thinkingInterval: number | undefined;
+
 // Auto-scroll to bottom when new messages arrive
 let messagesContainer: HTMLDivElement;
 $effect(() => {
@@ -58,8 +67,14 @@ function handleSendMessage(message: string) {
     },
   ];
 
-  // Simulate AI thinking
+  // Start AI thinking with progressive messages
   isAiThinking = true;
+  thinkingMessageIndex = 0;
+
+  // Rotate thinking message every 2 seconds
+  thinkingInterval = window.setInterval(() => {
+    thinkingMessageIndex = (thinkingMessageIndex + 1) % thinkingMessages.length;
+  }, 2000);
 
   // TODO: Send to AI agent API
   setTimeout(() => {
@@ -72,7 +87,13 @@ function handleSendMessage(message: string) {
         timestamp: new Date(),
       },
     ];
+
+    // Stop thinking animation
     isAiThinking = false;
+    if (thinkingInterval) {
+      clearInterval(thinkingInterval);
+      thinkingInterval = undefined;
+    }
   }, 1500);
 }
 
@@ -96,12 +117,12 @@ function handleQuestionResponse(response: any) {
     <header class="flex items-center justify-between border-b border-ash px-4 py-3">
       <div class="flex items-center gap-2">
         <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-amber/15">
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 256 256" fill="currentColor" class="text-amber-dim">
-            <path opacity="0.2" d="M224,128A96,96,0,0,1,79.93,211.11h0L42.34,221.66a8,8,0,0,1-9.72-9.72l10.06-36.66-.47-.81A96,96,0,1,1,224,128Z"/>
-            <path d="M128,24A104,104,0,0,0,36.18,176.88L24.83,218.05a16,16,0,0,0,19.52,19.52l41.17-11.35A104,104,0,1,0,128,24Zm0,192a88.11,88.11,0,0,1-44.06-11.78,8,8,0,0,0-4-1.08,8.09,8.09,0,0,0-2.12.28L40,215.56l12.06-37.81a8,8,0,0,0-.79-6.14A88,88,0,1,1,128,216Z"/>
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 256 256" fill="currentColor" class="text-amber-dim">
+            <path opacity="0.2" d="M128,32a96,96,0,1,0,96,96A96,96,0,0,0,128,32ZM80,176l17.37-69.47L167,80Z"/>
+            <path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216ZM172.42,72.84l-64,32a8.05,8.05,0,0,0-3.58,3.58l-32,64A8,8,0,0,0,80,184a8.1,8.1,0,0,0,3.58-.84l64-32a8.05,8.05,0,0,0,3.58-3.58l32-64a8,8,0,0,0-10.74-10.74ZM138,138,97.89,158.11,118,118l40.15-20.07Z"/>
           </svg>
         </div>
-        <h2 class="font-display text-base font-semibold text-ink">Guide</h2>
+        <h2 class="font-display text-lg font-semibold tracking-tight text-ink">Guide</h2>
       </div>
 
       {#if onToggle}
@@ -129,11 +150,11 @@ function handleQuestionResponse(response: any) {
       {#if isAiThinking}
         <div class="flex items-center gap-2 text-sm text-graphite">
           <div class="flex gap-1">
-            <span class="animate-bounce" style="animation-delay: 0ms">●</span>
-            <span class="animate-bounce" style="animation-delay: 150ms">●</span>
-            <span class="animate-bounce" style="animation-delay: 300ms">●</span>
+            <span class="thinking-dot" style="--delay: 0ms">●</span>
+            <span class="thinking-dot" style="--delay: 150ms">●</span>
+            <span class="thinking-dot" style="--delay: 300ms">●</span>
           </div>
-          <span>Thinking...</span>
+          <span>{thinkingMessages[thinkingMessageIndex]}</span>
         </div>
       {/if}
 
@@ -166,16 +187,19 @@ function handleQuestionResponse(response: any) {
 </aside>
 
 <style>
-  @keyframes bounce {
+  @keyframes float {
     0%, 100% {
       transform: translateY(0);
+      animation-timing-function: cubic-bezier(0.165, 0.84, 0.44, 1); /* ease-out-quart */
     }
     50% {
       transform: translateY(-4px);
+      animation-timing-function: cubic-bezier(0.165, 0.84, 0.44, 1);
     }
   }
 
-  .animate-bounce {
-    animation: bounce 1s infinite;
+  .thinking-dot {
+    animation: float 1s infinite;
+    animation-delay: var(--delay);
   }
 </style>

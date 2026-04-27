@@ -15,14 +15,17 @@ parameters:
           question:
             type: string
             description: The question text
+          context:
+            type: string
+            description: Optional explanation of why you're asking (helps reduce user anxiety)
           header:
             type: string
             description: Optional section header for grouping
           options:
             type: array
-            description: 2-4 options to choose from
+            description: 2-5 options to choose from
             minItems: 2
-            maxItems: 4
+            maxItems: 5
             items:
               type: object
               properties:
