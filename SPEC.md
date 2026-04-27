@@ -3,6 +3,11 @@
 > An AI-guided portfolio builder that helps people showcase their work,
 > especially those who struggle to get started.
 
+> **Scope discipline note:** Features in this spec are tagged (v1),
+> (v2), or (v3). v1 is the smallest scope that validates the core
+> product hypothesis. Do not pull v2 or v3 features into v1 without
+> explicit re-scoping. See §2 and §18 for the rationale.
+
 ---
 
 ## Table of Contents
@@ -55,7 +60,20 @@ review; no builder optimizes for this.
 
 ---
 
-## 2. User Personas
+## 2. Versioned Roadmap & Acceptance Gates
+
+This product is built solo, and scope discipline is the single biggest
+risk. Features are tagged (v1), (v2), or (v3) throughout this spec.
+v1 is the validation phase — minimum viable to prove the core
+hypothesis. v2 expands once v1 is proven. v3 deepens once v2 is
+monetized.
+
+See sections 18, 19, 20 for the full v1/v2/v3 breakdowns and
+acceptance criteria.
+
+---
+
+## 3. User Personas
 
 The day-one user is **anyone who struggles to get started**, regardless of
 profession. The ADHD/executive-function-block experience is the core
@@ -80,7 +98,7 @@ design constraint.
 - **Intermediate:** Skips the wizard, uses drag-and-drop, asks the AI for help when stuck.
 - **Power user:** Wants full control, custom zones, manual block placement, AI as a fast assistant.
 
-## 3. User Flows
+## 4. User Flows
 
 ### 3.1 First-Time User (Full Guided Flow)
 
@@ -147,7 +165,7 @@ Published site has "Edit" button (visible to owner only)
 
 ---
 
-## 4. AI Agent System
+## 5. AI Agent System
 
 Inspired by the multi-agent architecture in
 [her-go](https://github.com/AutumnsGrove/her-go). A driver agent
@@ -716,7 +734,7 @@ exact pattern used to design this spec.
 
 ---
 
-## 5. App Surfaces & Routes
+## 6. App Surfaces & Routes
 
 The application has four distinct surfaces, each with its own layout,
 auth requirements, and routing.
@@ -781,7 +799,7 @@ button that redirects back to `/edit/:site-id` on the builder app.
 
 ---
 
-## 6. Editor Experience
+## 7. Editor Experience
 
 ### 6.1 Layout
 
@@ -847,7 +865,7 @@ history.
 
 ---
 
-## 7. Zone & Block Architecture
+## 8. Zone & Block Architecture
 
 ### 7.1 Zones
 
@@ -988,7 +1006,7 @@ line (removable on paid plans).
 
 ---
 
-## 8. Template & Style System
+## 9. Template & Style System
 
 ### 8.1 Architecture
 
@@ -1048,7 +1066,7 @@ Future: users can create custom blocks in Svelte or HTML/CSS/JS.
 
 ---
 
-## 9. Content Pipeline
+## 10. Content Pipeline
 
 ### 9.1 Ingestion Paths
 
@@ -1128,7 +1146,7 @@ cards stored in D1:
 }
 ```
 
-## 10. Output Sites
+## 11. Output Sites
 
 ### 10.1 Core Principle: Code Translates Data, Never Describes It
 
@@ -1339,7 +1357,7 @@ request.
 
 ---
 
-## 11. Deployment Options
+## 12. Deployment Options
 
 ### 10.1 Download Bundle (Always Free)
 
@@ -1383,7 +1401,7 @@ Forage-style domain discovery integrated into the publish flow:
 
 ---
 
-## 12. Infrastructure & Data Model
+## 13. Infrastructure & Data Model
 
 ### 11.1 Cloudflare Services
 
@@ -1451,7 +1469,7 @@ next session open.
 
 ---
 
-## 13. Auth & Identity
+## 14. Auth & Identity
 
 ### 12.1 Provider: WorkOS AuthKit
 
@@ -1478,7 +1496,7 @@ Simple role model:
 
 ---
 
-## 14. Billing & Pricing
+## 15. Billing & Pricing
 
 ### 13.1 Model: Freemium + À La Carte
 
@@ -1504,7 +1522,7 @@ Users pick what they want. No forced bundles.
 
 ---
 
-## 15. SEO & Accessibility
+## 16. SEO & Accessibility
 
 ### 14.1 SEO (Full Suite, Auto-Generated)
 
@@ -1538,7 +1556,7 @@ navigation system. A well-structured a11y tree gives the agent a flat,
 labeled list of landmarks, headings, and components — much easier to
 reason about than raw HTML.
 
-## 16. Tech Stack Summary
+## 17. Tech Stack Summary
 
 ```
 BUILDER APP (SaaS editor)
@@ -1583,7 +1601,7 @@ OUTPUT SITES (generated portfolios)
 
 ---
 
-## 17. MVP Scope
+## 18. MVP Scope
 
 ### What Ships in v1
 
@@ -1632,7 +1650,7 @@ OUTPUT SITES (generated portfolios)
 
 ---
 
-## 18. Future Phases
+## 19. Future Phases
 
 ### v2 — Expand
 
