@@ -3,6 +3,9 @@ dist/
 .astro/
 .wrangler/
 
+# Generated
+src/agents/tools/registry.generated.ts
+
 # Dependencies
 node_modules/
 
