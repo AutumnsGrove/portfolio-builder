@@ -14,9 +14,10 @@ import StructuredQuestions from './StructuredQuestions.svelte';
 interface Props {
   isCollapsed?: boolean;
   onToggle?: () => void;
+  siteId?: string;
 }
 
-let { isCollapsed = false, onToggle }: Props = $props();
+let { isCollapsed = false, onToggle, siteId = 'demo-site' }: Props = $props();
 
 type Message = {
   id: string;
@@ -38,6 +39,7 @@ let messages = $state<Message[]>([
 let isAiThinking = $state(false);
 let currentQuestions = $state<any>(null);
 let lastUserMessage = $state<string>(''); // For retry on error
+let currentConversationId = $state<string | undefined>(undefined);
 
 // Progressive thinking messages
 const thinkingMessages = [
@@ -82,36 +84,47 @@ async function handleSendMessage(message: string) {
   }, 2000);
 
   try {
-    // TODO: Replace with real API call
-    // const response = await fetch('/api/chat', {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify({ message, conversationId: 'xxx' })
-    // });
-    // if (!response.ok) throw new Error('AI request failed');
-    // const data = await response.json();
-
-    // Mock: Simulate random failure (50% for testing, adjust as needed)
-    await new Promise((resolve, reject) => {
-      setTimeout(() => {
-        if (Math.random() < 0.5) {
-          reject(new Error('AI service temporarily unavailable'));
-        } else {
-          resolve(null);
-        }
-      }, 1500);
+    const response = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message,
+        conversationId: currentConversationId,
+        siteId,
+      }),
     });
 
-    // Success: Add AI response
-    messages = [
-      ...messages,
-      {
-        id: crypto.randomUUID(),
-        role: 'assistant',
-        content: "Great! I'll help you set that up. First, let's pick a starting layout.",
-        timestamp: new Date(),
-      },
-    ];
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error((errorData as any).error || `Request failed (${response.status})`);
+    }
+
+    const data = await response.json() as {
+      conversationId: string;
+      reply?: string;
+      questions?: any;
+      trace?: any[];
+    };
+
+    currentConversationId = data.conversationId;
+
+    // Add AI reply to message history
+    if (data.reply) {
+      messages = [
+        ...messages,
+        {
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          content: data.reply,
+          timestamp: new Date(),
+        },
+      ];
+    }
+
+    // Show structured questions if returned
+    if (data.questions) {
+      currentQuestions = data.questions;
+    }
   } catch (error) {
     // Error handling
     console.error('AI request failed:', error);
