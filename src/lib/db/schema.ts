@@ -6,9 +6,9 @@ import type { Zone, Block, ProjectCard } from "@/lib/manifest";
 
 export const users = sqliteTable("users", {
   id: text("id").primaryKey(),
-  workosId: text("workos_id").notNull().unique(),
   email: text("email").notNull(),
   displayName: text("display_name"),
+  customInstructions: text("custom_instructions"),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .$defaultFn(() => new Date()),

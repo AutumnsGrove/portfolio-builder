@@ -26,8 +26,8 @@
 ## 1. What's IN v1
 
 **Auth & identity**
-- WorkOS AuthKit with Google sign-in only
-- Simple session cookie storage (no Durable Objects)
+- BetterAuth (self-hosted) with Google sign-in only
+- Session cookies stored in D1 (no Durable Objects)
 
 **Editor**
 - Single-page portfolio only (anchor nav for sections; no multi-page)
@@ -655,13 +655,15 @@ v2 only. Paid (~$2/mo) via Cloudflare for SaaS.
 | **D1** | All queryable relational data. One database (or per-tenant if needed at scale). |
 | **R2** | Binary blob storage. User uploads, generated sites, export bundles. Zero egress fees. |
 
-Durable Objects and CF AI Gateway are v2. v1 keeps editor session state in D1 + an encrypted session cookie.
+Durable Objects and CF AI Gateway are v2. v1 keeps editor session state in D1. Auth sessions are managed by BetterAuth (cookie-based, validated against D1).
 
 ### 11.2 D1 Schema (Core Tables - v1)
 
 ```sql
 -- Users & Auth
-users (id, workos_id, email, display_name, created_at, updated_at)
+-- BetterAuth manages its own tables: user, session, account, verification
+-- Our app references BetterAuth's user.id as the foreign key
+users (id, email, display_name, created_at, updated_at)
 
 -- Sites & Content
 sites (id, user_id, name, slug, template_id, style_layer_id, status, published_at)
@@ -698,21 +700,45 @@ r2-bucket/
 
 ## 12. Auth & Identity
 
-### 12.1 Provider: WorkOS AuthKit
+### 12.1 Provider: BetterAuth (Self-Hosted)
 
-- **1,000,000 MAUs free** — covers the project for years
-- Native Cloudflare Workers support (Fetch API + Web Crypto, no Node deps)
-- Google OAuth as primary sign-in method
+- **Open-source, zero vendor lock-in** — all auth data lives in our D1 database
+- Native Cloudflare Workers support (per-request instantiation pattern)
+- Google OAuth as primary sign-in method (built-in social provider)
+- No external auth service dependency — runs entirely inside our Worker
 
 ### 12.2 Flow
 
 1. User clicks "Sign in with Google"
-2. Popup/redirect to Google OAuth (handled by WorkOS AuthKit)
-3. Return to app with session token
-4. Worker validates token on every request via WorkOS SDK
-5. Session stored in encrypted cookie (httpOnly, secure, sameSite)
+2. Redirect to Google OAuth (handled by BetterAuth's social provider)
+3. BetterAuth handles callback, creates/updates user + session in D1
+4. Session token stored in cookie (httpOnly, secure, sameSite)
+5. Astro middleware validates session on every request via `auth.api.getSession()`
 
-### 12.3 Authorization (v1)
+### 12.3 Integration Pattern (Cloudflare Workers)
+
+D1 bindings only exist inside the Workers runtime, so BetterAuth must be
+instantiated per-request (not as a module-level singleton):
+
+```ts
+function createAuth(db: D1Database) {
+  return betterAuth({
+    database: drizzle(db),
+    socialProviders: {
+      google: {
+        clientId: env.GOOGLE_CLIENT_ID,
+        clientSecret: env.GOOGLE_CLIENT_SECRET,
+      },
+    },
+  });
+}
+```
+
+BetterAuth creates and manages four core tables: `user`, `session`, `account`,
+`verification`. These are separate from our app's `users` table — we reference
+BetterAuth's `user.id` as the foreign key throughout the app schema.
+
+### 12.4 Authorization (v1)
 
 Simple role model:
 
@@ -758,7 +784,7 @@ BUILDER APP (SaaS editor)
 ├─ UI Primitives: bits-ui v2 (headless, accessible, Svelte 5 native)
 ├─ Styling:       Tailwind CSS v4 (Vite plugin, CSS-based config)
 ├─ Validation:    Zod v4 (manifest schemas, API boundaries, tool params)
-├─ Auth:          WorkOS AuthKit (1M free MAU, Google OAuth)
+├─ Auth:          BetterAuth (self-hosted, D1-backed, Google OAuth)
 
 BACKEND (Cloudflare)
 ├─ Compute:       Cloudflare Workers (not Pages)

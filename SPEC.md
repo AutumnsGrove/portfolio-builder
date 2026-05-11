@@ -85,7 +85,7 @@ The day-one user is **anyone who struggles to get started**, regardless of profe
 
 ```
 Landing Page
-  → Sign in with Google (WorkOS AuthKit)
+  → Sign in with Google (BetterAuth)
   → Welcome screen: "What do you do?"
   → Chat with Guide Agent (wizard IS the first conversation)
   → Editor opens with pre-populated zones and blocks
@@ -153,7 +153,7 @@ BUILDER APP
 ├─ UI Primitives: bits-ui v2
 ├─ Styling:       Tailwind CSS v4
 ├─ Validation:    Zod v4
-├─ Auth:          WorkOS AuthKit
+├─ Auth:          BetterAuth (self-hosted, D1-backed)
 
 BACKEND (Cloudflare)
 ├─ Compute:       Workers

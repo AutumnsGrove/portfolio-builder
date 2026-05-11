@@ -102,14 +102,13 @@ CREATE TABLE `style_configs` (
 --> statement-breakpoint
 CREATE TABLE `users` (
 	`id` text PRIMARY KEY NOT NULL,
-	`workos_id` text NOT NULL,
 	`email` text NOT NULL,
 	`display_name` text,
+	`custom_instructions` text,
 	`created_at` integer NOT NULL,
 	`updated_at` integer NOT NULL
 );
 --> statement-breakpoint
-CREATE UNIQUE INDEX `users_workos_id_unique` ON `users` (`workos_id`);--> statement-breakpoint
 CREATE TABLE `versions` (
 	`id` text PRIMARY KEY NOT NULL,
 	`site_id` text NOT NULL,

@@ -107,11 +107,14 @@ Nothing actively in progress (session ended).
   - Error handling (rate limits, timeouts)
 
 ### Auth & Identity
-- [ ] **WorkOS AuthKit** (§12)
-  - Google sign-in only
-  - Session cookie storage
-  - User creation in D1
-  - Redirect flow
+- [ ] **BetterAuth** (§12)
+  - Install `better-auth` package
+  - Configure Google OAuth social provider
+  - Per-request auth factory (CF Workers pattern)
+  - BetterAuth D1 tables (user, session, account, verification)
+  - Astro API route (`/api/auth/[...all]`)
+  - Astro middleware for session validation
+  - Wire up user ID in chat API (replace mock)
 
 ### Editor UI
 - [ ] **Zone/block manipulation** (§5)

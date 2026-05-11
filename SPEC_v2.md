@@ -81,7 +81,7 @@ All of these must pass before v3 work begins:
 
 1. **Real revenue.**
    - At least 20 paying customers (not friends, not comp'd accounts).
-   - Stripe-verified MRR > monthly Cloudflare + WorkOS + AI provider costs.
+   - Stripe-verified MRR > monthly Cloudflare + AI provider costs.
 
 2. **Custom domains work in production.**
    - At least 5 customers running on custom domains for 30+ consecutive days with no support intervention.

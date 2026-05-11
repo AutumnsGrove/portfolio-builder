@@ -30,7 +30,7 @@ This tool fixes that. An AI guide interviews you about your work, helps you orga
 
 - **Frontend:** Astro + Svelte 5 + bits-ui + Tailwind v4
 - **Backend:** Cloudflare Workers + D1 + R2 + Durable Objects
-- **Auth:** WorkOS AuthKit
+- **Auth:** BetterAuth (self-hosted, D1-backed)
 - **AI:** Multi-provider via Cloudflare AI Gateway
 
 ## Status

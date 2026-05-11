@@ -14,7 +14,7 @@ Read `SPEC.md` for the full technical specification.
 - **Builder app:** Astro + Svelte 5 + bits-ui + Tailwind v4
 - **Backend:** Cloudflare Workers + D1 + R2
   - Durable Objects (v2 — v1 uses D1 + session cookies)
-- **Auth:** WorkOS AuthKit
+- **Auth:** BetterAuth (self-hosted, D1-backed)
 - **Payments:** Stripe (v2 — no billing in v1)
 - **AI routing:** OpenRouter (v1 single provider); Cloudflare AI Gateway (v2)
 - **Output sites:** Astro SSG (v1 builds at publish time); Astro SSR with stale-while-revalidate (v2)
@@ -214,8 +214,8 @@ portfolio-builder/
   Same components, different manifest source.
 - **Manifest-driven architecture**: code translates data, never describes it.
   All content lives in JSON manifests. Components are pure renderers.
-- **WorkOS over Clerk** for auth: 1M free MAU, native CF Workers support,
-  no `node:async_hooks` issues.
+- **BetterAuth over WorkOS/Clerk** for auth: self-hosted, all data in our D1,
+  zero vendor lock-in, native CF Workers support. Google OAuth built in.
 - **D1 + session cookies for v1; DOs for v2**: v1 keeps it simple. DOs only
   land if scale demands them.
 - **OpenRouter for v1; multi-provider for v2**: v1 hardcodes one AI provider

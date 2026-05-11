@@ -5,8 +5,8 @@ This document defines **where** and **when** to track each analytics event.
 ## Funnel Events (User Behavior)
 
 ### 1. `signup`
-**When:** User completes account creation via WorkOS AuthKit  
-**Where:** `worker/auth/callback.ts` (after WorkOS session established)  
+**When:** User completes account creation via BetterAuth  
+**Where:** Astro middleware or BetterAuth `onUserCreated` hook (after first Google sign-in)  
 **Code:**
 ```typescript
 // After inserting new user into DB
@@ -74,7 +74,7 @@ if (!hasPublished) {
 
 ### 5. `returned_after_publish`
 **When:** User logs back in after their first publish  
-**Where:** `worker/auth/callback.ts` (on subsequent logins)  
+**Where:** Astro middleware (on subsequent logins, after session validation)  
 **Logic:** Check if user has published AND hasn't triggered this event yet  
 **Code:**
 ```typescript
