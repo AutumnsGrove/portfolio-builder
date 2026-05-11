@@ -57,7 +57,6 @@ describe("Database schema structure", () => {
 
   it("should have required columns on users table", () => {
     expect(users.id).toBeDefined();
-    expect(users.workosId).toBeDefined();
     expect(users.email).toBeDefined();
     expect(users.displayName).toBeDefined();
     expect(users.createdAt).toBeDefined();

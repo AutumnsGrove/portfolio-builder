@@ -90,7 +90,7 @@ export class OpenRouterError extends Error {
 // --- Client ---
 
 /** Default model for v1. $1/MTok in, $5/MTok out. Good at tool calling. */
-const DEFAULT_MODEL = "anthropic/claude-haiku-4-5-20251001";
+const DEFAULT_MODEL = "anthropic/claude-haiku-4.5";
 
 /** Max retries for transient errors (429, 5xx). */
 const MAX_RETRIES = 3;

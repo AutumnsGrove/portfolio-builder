@@ -5,8 +5,6 @@
  * This page is for development only, to test the chat components.
  */
 
-export const prerender = true;
-
 import "@fontsource-variable/outfit";
 import "@fontsource-variable/lexend";
 import "@/styles/app.css";
@@ -22,7 +20,7 @@ import ChatPanel from "@/components/chat/ChatPanel.svelte";
   <body class="bg-stone">
     <div class="flex h-screen">
       <!-- Chat Panel -->
-      <ChatPanel client:load isCollapsed={false} />
+      <ChatPanel client:only="svelte" isCollapsed={false} />
 
       <!-- Main Content Area (placeholder) -->
       <main class="flex flex-1 items-center justify-center">

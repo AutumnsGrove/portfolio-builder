@@ -5,10 +5,11 @@
  * persists conversation state in D1, tracks metrics, and returns the
  * agent's response (reply text or structured questions).
  *
- * Auth is mocked for v1 — WorkOS integration is a separate task.
+ * Auth is mocked for now — BetterAuth integration is a separate task.
  */
 
 import type { APIRoute } from "astro";
+import { env } from "cloudflare:workers";
 import { z } from "zod";
 import { processMessage } from "@/lib/ai/guide-agent";
 import {
@@ -40,7 +41,7 @@ function jsonError(status: number, message: string, details?: unknown): Response
 
 // --- Handler ---
 
-export const POST: APIRoute = async ({ request, locals }) => {
+export const POST: APIRoute = async ({ request }) => {
   // 1. Parse and validate request body
   let body: unknown;
   try {
@@ -56,18 +57,17 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
   const { message, conversationId, siteId } = parsed.data;
 
-  // 2. Get environment bindings
-  const env = locals.runtime.env as Env;
-  const db = env.DB;
-  const apiKey = env.OPENROUTER_API_KEY;
+  // 2. Get environment bindings (Astro 6: import from cloudflare:workers)
+  const db = (env as Env).DB;
+  const apiKey = (env as Env).OPENROUTER_API_KEY;
 
   if (!apiKey) {
     console.error("[Chat API] OPENROUTER_API_KEY not configured");
     return jsonError(500, "AI service not configured");
   }
 
-  // 3. Auth (mock for v1 — WorkOS integration is separate)
-  const userId = "mock-user-id"; // TODO: Extract from session cookie
+  // 3. Auth (mock for now — BetterAuth integration is separate)
+  const userId = "mock-user-id"; // TODO: Extract from BetterAuth session
 
   try {
     // 4. Load or create conversation

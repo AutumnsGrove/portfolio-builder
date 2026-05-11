@@ -1,3 +1,4 @@
+/// <reference types="node" />
 /**
  * Tool Registry Loader — Build-time code generation.
  *
