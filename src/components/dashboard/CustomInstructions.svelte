@@ -35,33 +35,32 @@
   }
 </script>
 
-<div class="space-y-3">
+<div class="space-y-2.5">
   <div class="flex items-center justify-between">
-    <label for="custom-instructions" class="font-display text-sm font-semibold text-ink">
-      Custom Instructions
-    </label>
+    <h2 class="font-display text-xs font-semibold uppercase tracking-wide text-graphite">
+      Guide Instructions
+    </h2>
     {#if saved}
       <span class="text-xs text-success">Saved</span>
     {/if}
   </div>
 
-  <p class="text-xs text-graphite">
-    Tell the Guide how you'd like it to work with you. These apply to all your portfolios.
+  <p class="text-xs leading-relaxed text-graphite">
+    How should the Guide work with you? These apply to all your portfolios.
   </p>
 
   <textarea
-    id="custom-instructions"
     bind:value
     rows="4"
-    placeholder="e.g. I'm a backend developer, keep things minimal. Don't use emojis. Focus on technical projects."
-    class="w-full resize-none rounded-lg border border-ash bg-cream px-3 py-2 text-sm text-ink placeholder-graphite transition-colors focus:border-amber focus:outline-none focus:ring-2 focus:ring-amber/20"
+    placeholder="e.g. I'm a backend developer, keep things minimal. Focus on technical projects."
+    class="w-full resize-none rounded-md border border-ash bg-stone/50 px-3 py-2 text-sm text-ink placeholder-graphite/60 transition-colors focus:border-amber focus:bg-cream focus:outline-none focus:ring-2 focus:ring-amber/20"
   ></textarea>
 
   <div class="flex justify-end">
     <button
       onclick={handleSave}
       disabled={!dirty || saving}
-      class="rounded-lg bg-amber px-4 py-2 text-sm font-medium text-ink transition-all duration-300 hover:-translate-y-0.5 hover:shadow-hover disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-none"
+      class="rounded-md bg-amber px-3.5 py-1.5 text-xs font-medium text-ink transition-all duration-200 hover:-translate-y-px hover:shadow-hover disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0 disabled:hover:shadow-none"
     >
       {saving ? 'Saving…' : 'Save'}
     </button>

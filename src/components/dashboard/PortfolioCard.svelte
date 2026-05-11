@@ -19,45 +19,61 @@
   let showVersions = $state(false);
 </script>
 
-<div class="group rounded-xl border border-ash bg-cream p-5 transition-all duration-300 hover:border-amber/40 hover:shadow-hover">
-  <div class="flex items-start justify-between gap-3">
+<div class="group rounded-lg border border-ash bg-stone/50 px-5 py-4 transition-colors duration-200 hover:bg-stone">
+  <div class="flex items-center justify-between gap-4">
     <div class="min-w-0 flex-1">
-      <h3 class="truncate font-display text-lg font-semibold text-ink">{name}</h3>
-      <p class="mt-0.5 text-xs text-graphite">{slug}.portfoliobuilder.com</p>
+      <div class="flex items-center gap-2.5">
+        <h3 class="truncate font-display text-base font-semibold text-ink">{name}</h3>
+        <span
+          class="shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium leading-none {status === 'draft' ? 'bg-amber/10 text-amber-dim' : 'bg-success/10 text-success'}"
+        >
+          {status === 'draft' ? 'Draft' : 'Live'}
+        </span>
+      </div>
+      <div class="mt-1 flex items-center gap-3 text-xs text-graphite">
+        <span>{slug}.portfoliobuilder.com</span>
+        <span class="text-ash">·</span>
+        <span>{updatedAt}</span>
+      </div>
     </div>
 
-    <span
-      class="shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium {status === 'draft' ? 'bg-amber/15 text-amber-dim' : 'bg-success/15 text-success'}"
-    >
-      {status === 'draft' ? 'Draft' : 'Published'}
-    </span>
+    <div class="flex items-center gap-2">
+      <button
+        class="rounded-md border border-ash px-3 py-1.5 text-xs text-graphite transition-colors hover:border-amber/40 hover:text-ink"
+        disabled
+        title="Export coming soon"
+      >
+        Export
+      </button>
+      <a
+        href="/builder/{id}"
+        class="rounded-md bg-amber px-4 py-1.5 text-xs font-medium text-ink transition-all duration-200 hover:-translate-y-px hover:shadow-hover"
+      >
+        Open
+      </a>
+    </div>
   </div>
 
-  <p class="mt-3 text-xs text-graphite">
-    Last edited {updatedAt}
-  </p>
-
-  <!-- Version dropdown -->
   {#if versions.length > 0}
-    <div class="relative mt-3">
+    <div class="mt-3 border-t border-ash pt-3">
       <button
         onclick={() => showVersions = !showVersions}
-        class="flex items-center gap-1.5 rounded-md border border-ash px-2.5 py-1 text-xs text-graphite transition-colors hover:border-amber/40 hover:text-ink"
+        class="flex items-center gap-1.5 text-xs text-graphite transition-colors hover:text-ink"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 256 256" fill="currentColor">
+        <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 256 256" fill="currentColor">
           <path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216Zm56-88a8,8,0,0,1-8,8H128a8,8,0,0,1-8-8V72a8,8,0,0,1,16,0v48h48A8,8,0,0,1,184,128Z"/>
         </svg>
         {versions.length} version{versions.length !== 1 ? 's' : ''}
-        <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 256 256" fill="currentColor" class="transition-transform" class:rotate-180={showVersions}>
+        <svg xmlns="http://www.w3.org/2000/svg" width="9" height="9" viewBox="0 0 256 256" fill="currentColor" class="transition-transform duration-200" class:rotate-180={showVersions}>
           <path d="M213.66,101.66l-80,80a8,8,0,0,1-11.32,0l-80-80A8,8,0,0,1,53.66,90.34L128,164.69l74.34-74.35a8,8,0,0,1,11.32,11.32Z"/>
         </svg>
       </button>
 
       {#if showVersions}
-        <div class="absolute left-0 top-full z-10 mt-1 w-56 rounded-lg border border-ash bg-cream py-1 shadow-overlay">
+        <div class="mt-2 space-y-1">
           {#each versions as version (version.id)}
             <button
-              class="flex w-full items-center justify-between px-3 py-2 text-left text-xs text-ink transition-colors hover:bg-stone"
+              class="flex w-full items-center justify-between rounded-md px-2.5 py-1.5 text-left text-xs text-ink transition-colors hover:bg-cream"
             >
               <span class="truncate font-medium">{version.name}</span>
               <span class="shrink-0 text-graphite">{version.createdAt}</span>
@@ -67,23 +83,4 @@
       {/if}
     </div>
   {/if}
-
-  <!-- Actions -->
-  <div class="mt-4 flex gap-2">
-    <a
-      href="/builder/{id}"
-      class="flex-1 rounded-lg bg-amber px-4 py-2 text-center text-sm font-medium text-ink transition-all duration-300 hover:-translate-y-0.5 hover:shadow-hover"
-    >
-      Open
-    </a>
-    <button
-      class="rounded-lg border border-ash px-3 py-2 text-sm text-graphite transition-colors hover:border-amber/40 hover:text-ink"
-      disabled
-      title="Export coming soon"
-    >
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 256 256" fill="currentColor">
-        <path d="M224,152v56a16,16,0,0,1-16,16H48a16,16,0,0,1-16-16V152a8,8,0,0,1,16,0v56H208V152a8,8,0,0,1,16,0Zm-101.66,5.66a8,8,0,0,0,11.32,0l40-40a8,8,0,0,0-11.32-11.32L136,132.69V40a8,8,0,0,0-16,0v92.69L93.66,106.34a8,8,0,0,0-11.32,11.32Z"/>
-      </svg>
-    </button>
-  </div>
 </div>
