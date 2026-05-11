@@ -1,0 +1,174 @@
+---
+/**
+ * Dashboard — Portfolio overview, user profile, custom instructions.
+ *
+ * Server-rendered from D1. Auth is mocked for now (hardcoded user ID).
+ * Interactive bits (version dropdown, custom instructions) are Svelte islands.
+ */
+
+import { env } from "cloudflare:workers";
+import "@fontsource-variable/outfit";
+import "@fontsource-variable/lexend";
+import "@/styles/app.css";
+import PortfolioCard from "@/components/dashboard/PortfolioCard.svelte";
+import CustomInstructions from "@/components/dashboard/CustomInstructions.svelte";
+
+const db = (env as Env).DB;
+const userId = "mock-user-id"; // TODO: BetterAuth session
+
+// Fetch user
+const user = await db
+  .prepare("SELECT id, email, display_name, custom_instructions FROM users WHERE id = ?")
+  .bind(userId)
+  .first<{ id: string; email: string; display_name: string | null; custom_instructions: string | null }>();
+
+if (!user) {
+  return Astro.redirect("/");
+}
+
+// Fetch portfolios
+const { results: sites } = await db
+  .prepare("SELECT id, name, slug, status, updated_at FROM sites WHERE user_id = ? ORDER BY updated_at DESC")
+  .bind(userId)
+  .all<{ id: string; name: string; slug: string; status: string; updated_at: number }>();
+
+// Fetch versions per site
+const siteVersions: Record<string, { id: string; name: string; createdAt: string }[]> = {};
+for (const site of sites) {
+  const { results: versions } = await db
+    .prepare("SELECT id, name, created_at FROM versions WHERE site_id = ? ORDER BY created_at DESC LIMIT 10")
+    .bind(site.id)
+    .all<{ id: string; name: string; created_at: number }>();
+
+  siteVersions[site.id] = versions.map((v) => ({
+    id: v.id,
+    name: v.name,
+    createdAt: new Date(v.created_at).toLocaleDateString(),
+  }));
+}
+
+function formatRelativeTime(timestamp: number): string {
+  const diff = Date.now() - timestamp;
+  const minutes = Math.floor(diff / 60000);
+  if (minutes < 1) return "Just now";
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d ago`;
+  return new Date(timestamp).toLocaleDateString();
+}
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Dashboard — Portfolio Builder</title>
+  </head>
+  <body class="min-h-screen bg-stone font-body text-ink">
+    <!-- Header -->
+    <header class="border-b border-ash bg-cream">
+      <div class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+        <a href="/" class="flex items-center gap-2">
+          <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-amber/15">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 256 256" fill="currentColor" class="text-amber-dim">
+              <path opacity="0.2" d="M128,32a96,96,0,1,0,96,96A96,96,0,0,0,128,32ZM80,176l17.37-69.47L167,80Z"/>
+              <path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216ZM172.42,72.84l-64,32a8.05,8.05,0,0,0-3.58,3.58l-32,64A8,8,0,0,0,80,184a8.1,8.1,0,0,0,3.58-.84l64-32a8.05,8.05,0,0,0,3.58-3.58l32-64a8,8,0,0,0-10.74-10.74ZM138,138,97.89,158.11,118,118l40.15-20.07Z"/>
+            </svg>
+          </div>
+          <span class="font-display text-lg font-bold tracking-tight">Portfolio Builder</span>
+        </a>
+
+        <div class="flex items-center gap-3">
+          <div class="text-right">
+            <p class="text-sm font-medium">{user.display_name || 'User'}</p>
+            <p class="text-xs text-graphite">{user.email}</p>
+          </div>
+          <div class="flex h-9 w-9 items-center justify-center rounded-full bg-ink text-cream">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 256 256" fill="currentColor">
+              <path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24ZM74.08,197.5a64,64,0,0,1,107.84,0,87.83,87.83,0,0,1-107.84,0ZM96,120a32,32,0,1,1,32,32A32,32,0,0,1,96,120Zm97.76,66.41a79.66,79.66,0,0,0-36.06-28.75,48,48,0,1,0-59.4,0,79.66,79.66,0,0,0-36.06,28.75,88,88,0,1,1,131.52,0Z"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main content -->
+    <main class="mx-auto max-w-6xl px-6 py-8">
+      <div class="grid gap-8 lg:grid-cols-3">
+        <!-- Portfolios section (2 cols) -->
+        <div class="lg:col-span-2">
+          <div class="flex items-center justify-between">
+            <h1 class="font-display text-2xl font-bold">Your Portfolios</h1>
+            <a
+              href="/builder/new"
+              class="flex items-center gap-2 rounded-lg bg-amber px-4 py-2.5 text-sm font-medium text-ink transition-all duration-300 hover:-translate-y-0.5 hover:shadow-hover"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 256 256" fill="currentColor">
+                <path d="M224,128a8,8,0,0,1-8,8H136v80a8,8,0,0,1-16,0V136H40a8,8,0,0,1,0-16h80V40a8,8,0,0,1,16,0v80h80A8,8,0,0,1,224,128Z"/>
+              </svg>
+              New Portfolio
+            </a>
+          </div>
+
+          {sites.length === 0 ? (
+            <div class="mt-8 rounded-xl border-2 border-dashed border-ash p-12 text-center">
+              <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-amber/15">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 256 256" fill="currentColor" class="text-amber-dim">
+                  <path d="M224,128a8,8,0,0,1-8,8H136v80a8,8,0,0,1-16,0V136H40a8,8,0,0,1,0-16h80V40a8,8,0,0,1,16,0v80h80A8,8,0,0,1,224,128Z"/>
+                </svg>
+              </div>
+              <h3 class="mt-4 font-display text-lg font-semibold">No portfolios yet</h3>
+              <p class="mt-1 text-sm text-graphite">Create your first portfolio and the Guide will help you build it.</p>
+            </div>
+          ) : (
+            <div class="mt-6 grid gap-4 sm:grid-cols-2">
+              {sites.map((site) => {
+                const status: 'draft' | 'published' = site.status === 'published' ? 'published' : 'draft';
+                return (
+                  <PortfolioCard
+                    client:only="svelte"
+                    id={site.id}
+                    name={site.name}
+                    slug={site.slug}
+                    status={status}
+                    updatedAt={formatRelativeTime(site.updated_at)}
+                    versions={siteVersions[site.id] || []}
+                  />
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        <!-- Sidebar: profile + instructions -->
+        <div class="space-y-6">
+          <!-- Profile card -->
+          <div class="rounded-xl border border-ash bg-cream p-5">
+            <h2 class="font-display text-sm font-semibold text-ink">Profile</h2>
+            <div class="mt-3 space-y-2">
+              <div>
+                <span class="text-xs text-graphite">Name</span>
+                <p class="text-sm font-medium">{user.display_name || '—'}</p>
+              </div>
+              <div>
+                <span class="text-xs text-graphite">Email</span>
+                <p class="text-sm font-medium">{user.email}</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Custom instructions -->
+          <div class="rounded-xl border border-ash bg-cream p-5">
+            <CustomInstructions
+              client:only="svelte"
+              initialValue={user.custom_instructions || ''}
+              userId={user.id}
+            />
+          </div>
+        </div>
+      </div>
+    </main>
+  </body>
+</html>
