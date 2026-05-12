@@ -15,5 +15,18 @@ interface Env {
 declare namespace App {
   interface Locals {
     cfContext: ExecutionContext;
+    user: {
+      id: string;
+      email: string;
+      name: string;
+      image: string | null;
+      customInstructions: string | null;
+    } | null;
+    session: {
+      id: string;
+      userId: string;
+      token: string;
+      expiresAt: Date;
+    } | null;
   }
 }

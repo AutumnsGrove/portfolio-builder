@@ -16,7 +16,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate",
+    "db:migrate": "wrangler d1 migrations apply portfolio-builder-db --local",
+    "db:regen": "rm -rf migrations .wrangler/state/v3/d1 && pnpm db:generate && pnpm db:migrate",
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
@@ -27,6 +28,8 @@
     "@fontsource-variable/outfit": "^5.2.8",
     "@tailwindcss/vite": "^4.2.4",
     "astro": "^6.1.9",
+    "better-auth": "^1.6.10",
+    "better-auth-cloudflare": "^0.3.0",
     "bits-ui": "^2.18.0",
     "drizzle-orm": "^0.45.2",
     "phosphor-svelte": "^3.1.0",

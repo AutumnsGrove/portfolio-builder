@@ -5,7 +5,7 @@
  * persists conversation state in D1, tracks metrics, and returns the
  * agent's response (reply text or structured questions).
  *
- * Auth is mocked for now — BetterAuth integration is a separate task.
+ * Protected by middleware — user must be signed in.
  */
 
 import type { APIRoute } from "astro";
@@ -41,7 +41,7 @@ function jsonError(status: number, message: string, details?: unknown): Response
 
 // --- Handler ---
 
-export const POST: APIRoute = async ({ request }) => {
+export const POST: APIRoute = async ({ request, locals }) => {
   // 1. Parse and validate request body
   let body: unknown;
   try {
@@ -66,8 +66,11 @@ export const POST: APIRoute = async ({ request }) => {
     return jsonError(500, "AI service not configured");
   }
 
-  // 3. Auth (mock for now — BetterAuth integration is separate)
-  const userId = "mock-user-id"; // TODO: Extract from BetterAuth session
+  // 3. Auth
+  if (!locals.user) {
+    return jsonError(401, "Not authenticated");
+  }
+  const userId = locals.user.id;
 
   try {
     // 4. Load or create conversation

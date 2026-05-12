@@ -6,9 +6,12 @@ const UpdateSchema = z.object({
   customInstructions: z.string().max(2000),
 });
 
-export const PUT: APIRoute = async ({ request }) => {
+export const PUT: APIRoute = async ({ request, locals }) => {
+  if (!locals.user) {
+    return new Response(JSON.stringify({ error: "Not authenticated" }), { status: 401 });
+  }
   const db = (env as Env).DB;
-  const userId = "mock-user-id"; // TODO: BetterAuth session
+  const userId = locals.user.id;
 
   let body: unknown;
   try {
@@ -23,7 +26,7 @@ export const PUT: APIRoute = async ({ request }) => {
   }
 
   await db
-    .prepare("UPDATE users SET custom_instructions = ?, updated_at = ? WHERE id = ?")
+    .prepare("UPDATE user SET custom_instructions = ?, updated_at = ? WHERE id = ?")
     .bind(parsed.data.customInstructions, Date.now(), userId)
     .run();
 

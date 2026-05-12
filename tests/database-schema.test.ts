@@ -7,7 +7,7 @@
 
 import { describe, it, expect } from "vitest";
 import {
-  users,
+  user,
   sites,
   zones,
   blocks,
@@ -18,11 +18,16 @@ import {
   analyticsEvents,
   agentMetrics,
 } from "../src/lib/db/schema";
+import { session, account, verification } from "../src/lib/db/auth-schema";
 
 describe("Database schema structure", () => {
   it("should have all required v1 tables", () => {
-    // Verify all 11 tables exist and are exported
-    expect(users).toBeDefined();
+    // BetterAuth tables
+    expect(user).toBeDefined();
+    expect(session).toBeDefined();
+    expect(account).toBeDefined();
+    expect(verification).toBeDefined();
+    // App tables
     expect(sites).toBeDefined();
     expect(zones).toBeDefined();
     expect(blocks).toBeDefined();
@@ -43,7 +48,7 @@ describe("Database schema structure", () => {
       return symbol ? table[symbol] : null;
     };
 
-    expect(getTableName(users)).toBe("users");
+    expect(getTableName(user)).toBe("user");
     expect(getTableName(sites)).toBe("sites");
     expect(getTableName(zones)).toBe("zones");
     expect(getTableName(blocks)).toBe("blocks");
@@ -55,12 +60,13 @@ describe("Database schema structure", () => {
     expect(getTableName(agentMetrics)).toBe("agent_metrics");
   });
 
-  it("should have required columns on users table", () => {
-    expect(users.id).toBeDefined();
-    expect(users.email).toBeDefined();
-    expect(users.displayName).toBeDefined();
-    expect(users.createdAt).toBeDefined();
-    expect(users.updatedAt).toBeDefined();
+  it("should have required columns on user table", () => {
+    expect(user.id).toBeDefined();
+    expect(user.email).toBeDefined();
+    expect(user.name).toBeDefined();
+    expect(user.customInstructions).toBeDefined();
+    expect(user.createdAt).toBeDefined();
+    expect(user.updatedAt).toBeDefined();
   });
 
   it("should have required columns on sites table", () => {
@@ -101,7 +107,7 @@ describe("Type safety integration", () => {
 
   it("should export schema for use in queries", () => {
     // Verify the schema exports can be imported and used
-    expect(typeof users).toBe("object");
+    expect(typeof user).toBe("object");
     expect(typeof sites).toBe("object");
     expect(typeof blocks).toBe("object");
   });

@@ -1,27 +1,15 @@
 import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
-import type { Zone, Block, ProjectCard } from "@/lib/manifest";
+import type { Block } from "@/lib/manifest";
+import { user } from "./auth-schema";
 
-// Database schema for Portfolio Builder v1.
-// Maps to SPEC_v1.md §11.2 with typed JSON columns for manifest data.
-
-export const users = sqliteTable("users", {
-  id: text("id").primaryKey(),
-  email: text("email").notNull(),
-  displayName: text("display_name"),
-  customInstructions: text("custom_instructions"),
-  createdAt: integer("created_at", { mode: "timestamp" })
-    .notNull()
-    .$defaultFn(() => new Date()),
-  updatedAt: integer("updated_at", { mode: "timestamp" })
-    .notNull()
-    .$defaultFn(() => new Date()),
-});
+// Re-export so existing imports still resolve
+export { user } from "./auth-schema";
 
 export const sites = sqliteTable("sites", {
   id: text("id").primaryKey(),
   userId: text("user_id")
     .notNull()
-    .references(() => users.id),
+    .references(() => user.id),
   name: text("name").notNull(),
   slug: text("slug").notNull().unique(),
   templateId: text("template_id"),
@@ -94,7 +82,7 @@ export const projectCards = sqliteTable("project_cards", {
   id: text("id").primaryKey(),
   userId: text("user_id")
     .notNull()
-    .references(() => users.id),
+    .references(() => user.id),
   title: text("title").notNull(),
   description: text("description").notNull(),
   stack: text("stack").notNull(), // JSON: string[]
@@ -169,7 +157,7 @@ export const styleConfigs = sqliteTable("style_configs", {
 // Analytics: Funnel events for measuring v1 acceptance criteria
 export const analyticsEvents = sqliteTable("analytics_events", {
   id: text("id").primaryKey(),
-  userId: text("user_id").references(() => users.id),
+  userId: text("user_id").references(() => user.id),
   siteId: text("site_id").references(() => sites.id),
   event: text("event").notNull(), // signup, started_build, first_block_added, etc.
   metadata: text("metadata"), // JSON: event-specific data
