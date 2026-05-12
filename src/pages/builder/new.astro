@@ -1,0 +1,46 @@
+---
+/**
+ * /builder/new — Create a new portfolio and redirect to the builder.
+ *
+ * On GET: Creates a new site record in D1 with default zones,
+ * then redirects to /builder/{id}. This is a server-side action page,
+ * not a form — clicking "New Portfolio" on the dashboard hits this route.
+ */
+
+import { env } from "cloudflare:workers";
+import { generateSlug } from "@/lib/sites/slug";
+import { getDefaultZones } from "@/lib/sites/defaults";
+
+const db = (env as Env).DB;
+const user = Astro.locals.user;
+const userId = user?.id ?? "dev";
+
+const siteId = crypto.randomUUID();
+const name = "Untitled Portfolio";
+const slug = generateSlug(name) + "-" + siteId.slice(0, 8);
+const now = Date.now();
+
+// Create the site
+await db
+  .prepare(
+    `INSERT INTO sites (id, user_id, name, slug, template_id, style_layer_id, status, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  )
+  .bind(siteId, userId, name, slug, "generalist", "minimal", "draft", now, now)
+  .run();
+
+// Create default zones
+const zones = getDefaultZones();
+for (const zone of zones) {
+  const zoneDbId = crypto.randomUUID();
+  await db
+    .prepare(
+      `INSERT INTO zones (id, site_id, zone_id, label, "order", created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    )
+    .bind(zoneDbId, siteId, zone.id, zone.label, zone.order, now, now)
+    .run();
+}
+
+return Astro.redirect(`/builder/${siteId}`);
+---

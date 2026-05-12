@@ -1,0 +1,195 @@
+---
+/**
+ * /builder/:id — Portfolio builder editor.
+ *
+ * Three-panel layout: chat sidebar (left), editor canvas (center), live preview (right).
+ * Server-rendered shell with Svelte islands for interactive bits.
+ */
+
+import { env } from "cloudflare:workers";
+import "@fontsource-variable/outfit";
+import "@fontsource-variable/lexend";
+import "@/styles/app.css";
+import ChatPanel from "@/components/chat/ChatPanel.svelte";
+
+const { id } = Astro.params;
+const db = (env as Env).DB;
+
+// Load the site
+const site = await db
+  .prepare("SELECT id, name, slug, status, updated_at FROM sites WHERE id = ?")
+  .bind(id)
+  .first<{ id: string; name: string; slug: string; status: string; updated_at: number }>();
+
+if (!site) {
+  return Astro.redirect("/dashboard");
+}
+
+// Load zones with their blocks
+const { results: zoneRows } = await db
+  .prepare('SELECT id, zone_id, label, "order" FROM zones WHERE site_id = ? ORDER BY "order" ASC')
+  .bind(id)
+  .all<{ id: string; zone_id: number; label: string; order: number }>();
+
+type BlockRow = { id: string; zone_id: string; order: number; type: string; size: string; content_json: string };
+const zoneBlocks: Record<string, BlockRow[]> = {};
+for (const zone of zoneRows) {
+  const { results: blockRows } = await db
+    .prepare('SELECT id, zone_id, "order", type, size, content_json FROM blocks WHERE zone_id = ? ORDER BY "order" ASC')
+    .bind(zone.id)
+    .all<BlockRow>();
+  zoneBlocks[zone.id] = blockRows;
+}
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{site.name} — Portfolio Builder</title>
+  </head>
+  <body class="h-screen overflow-hidden bg-stone font-body text-ink">
+    <!-- Top bar -->
+    <header class="flex h-12 items-center justify-between border-b border-ash bg-cream px-4">
+      <div class="flex items-center gap-3">
+        <a href="/dashboard" class="flex items-center gap-1.5 text-sm text-graphite transition-colors hover:text-ink">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 256 256" fill="currentColor">
+            <path d="M224,128a8,8,0,0,1-8,8H59.31l58.35,58.34a8,8,0,0,1-11.32,11.32l-72-72a8,8,0,0,1,0-11.32l72-72a8,8,0,0,1,11.32,11.32L59.31,120H216A8,8,0,0,1,224,128Z"/>
+          </svg>
+          Dashboard
+        </a>
+        <span class="text-ash">|</span>
+        <h1 class="truncate font-display text-sm font-semibold">{site.name}</h1>
+        <span class="rounded-full px-2 py-0.5 text-[10px] font-medium leading-none {site.status === 'draft' ? 'bg-amber/10 text-amber-dim' : 'bg-success/10 text-success'}">
+          {site.status === 'draft' ? 'Draft' : 'Live'}
+        </span>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button
+          id="save-btn"
+          class="rounded-md border border-ash px-3 py-1 text-xs text-graphite transition-colors hover:border-amber/40 hover:text-ink"
+        >
+          Save
+        </button>
+        <button
+          id="delete-btn"
+          class="rounded-md border border-ash px-3 py-1 text-xs text-graphite transition-colors hover:border-error/40 hover:text-error"
+        >
+          Delete
+        </button>
+      </div>
+    </header>
+
+    <!-- Three-panel layout -->
+    <div class="flex h-[calc(100vh-3rem)]">
+      <!-- Left: Chat sidebar -->
+      <ChatPanel client:only="svelte" isCollapsed={false} siteId={site.id} />
+
+      <!-- Center: Editor canvas -->
+      <main class="flex-1 overflow-y-auto p-6">
+        <div class="mx-auto max-w-2xl space-y-4">
+          {zoneRows.length === 0 ? (
+            <div class="rounded-xl border-2 border-dashed border-ash px-8 py-16 text-center">
+              <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-amber/10">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 256 256" fill="currentColor" class="text-amber-dim">
+                  <path d="M224,128a8,8,0,0,1-8,8H136v80a8,8,0,0,1-16,0V136H40a8,8,0,0,1,0-16h80V40a8,8,0,0,1,16,0v80h80A8,8,0,0,1,224,128Z"/>
+                </svg>
+              </div>
+              <h3 class="mt-5 font-display text-lg font-semibold">Start building</h3>
+              <p class="mx-auto mt-1.5 max-w-xs text-sm text-graphite">
+                Chat with the Guide to add content, or use the tools below to add zones and blocks manually.
+              </p>
+            </div>
+          ) : (
+            zoneRows.map((zone) => (
+              <section class="rounded-lg border border-ash bg-cream p-4">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-2">
+                    <span class="flex h-6 w-6 items-center justify-center rounded bg-amber/10 text-[10px] font-bold text-amber-dim">
+                      {zone.zone_id}
+                    </span>
+                    <h2 class="font-display text-sm font-semibold">{zone.label}</h2>
+                  </div>
+                  <div class="flex items-center gap-1">
+                    <button class="rounded p-1 text-graphite transition-colors hover:bg-stone hover:text-ink" title="Move up">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 256 256" fill="currentColor">
+                        <path d="M213.66,165.66a8,8,0,0,1-11.32,0L128,91.31,53.66,165.66a8,8,0,0,1-11.32-11.32l80-80a8,8,0,0,1,11.32,0l80,80A8,8,0,0,1,213.66,165.66Z"/>
+                      </svg>
+                    </button>
+                    <button class="rounded p-1 text-graphite transition-colors hover:bg-stone hover:text-ink" title="Move down">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 256 256" fill="currentColor">
+                        <path d="M213.66,101.66l-80,80a8,8,0,0,1-11.32,0l-80-80A8,8,0,0,1,53.66,90.34L128,164.69l74.34-74.35a8,8,0,0,1,11.32,11.32Z"/>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+
+                {(zoneBlocks[zone.id] ?? []).length === 0 ? (
+                  <div class="mt-3 rounded border border-dashed border-ash px-4 py-6 text-center text-xs text-graphite">
+                    No blocks yet — add one via the Guide or tools
+                  </div>
+                ) : (
+                  <div class="mt-3 space-y-2">
+                    {(zoneBlocks[zone.id] ?? []).map((block) => (
+                      <div class="flex items-center gap-3 rounded border border-ash bg-stone/50 px-3 py-2 text-xs">
+                        <span class="rounded bg-amber/10 px-1.5 py-0.5 font-medium text-amber-dim">{block.type}</span>
+                        <span class="text-graphite">Size: {block.size}</span>
+                        <div class="ml-auto flex items-center gap-1">
+                          <button class="rounded p-0.5 text-graphite hover:text-ink" title="Move up">↑</button>
+                          <button class="rounded p-0.5 text-graphite hover:text-ink" title="Move down">↓</button>
+                          <button class="rounded p-0.5 text-graphite hover:text-error" title="Remove">×</button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
+            ))
+          )}
+        </div>
+      </main>
+
+      <!-- Right: Live preview (placeholder) -->
+      <aside class="hidden w-80 border-l border-ash bg-cream lg:block">
+        <div class="flex h-full flex-col items-center justify-center p-6 text-center">
+          <div class="flex h-10 w-10 items-center justify-center rounded-full bg-amber/10">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 256 256" fill="currentColor" class="text-amber-dim">
+              <path d="M247.31,124.76c-.35-.79-8.82-19.58-27.65-38.41C194.57,61.26,162.88,48,128,48S61.43,61.26,36.34,86.35C17.51,105.18,9,124,8.69,124.76a8,8,0,0,0,0,6.5c.35.79,8.82,19.57,27.65,38.4C61.43,194.74,93.12,208,128,208s66.57-13.26,91.66-38.34c18.83-18.83,27.3-37.61,27.65-38.4A8,8,0,0,0,247.31,124.76ZM128,192c-30.78,0-57.67-11.19-79.93-33.29A169.47,169.47,0,0,1,24.42,128,169.47,169.47,0,0,1,48.07,97.29C70.33,75.19,97.22,64,128,64s57.67,11.19,79.93,33.29A169.47,169.47,0,0,1,231.58,128C219.39,152.84,180.63,192,128,192Zm0-112a48,48,0,1,0,48,48A48.05,48.05,0,0,0,128,80Zm0,80a32,32,0,1,1,32-32A32,32,0,0,1,128,160Z"/>
+            </svg>
+          </div>
+          <p class="mt-3 text-sm font-medium text-ink">Live Preview</p>
+          <p class="mt-1 text-xs text-graphite">Preview will appear here as you add content</p>
+        </div>
+      </aside>
+    </div>
+
+    <script define:vars={{ siteId: site.id }}>
+      document.getElementById('delete-btn')?.addEventListener('click', async () => {
+        if (!confirm('Delete this portfolio? This cannot be undone.')) return;
+
+        const res = await fetch(`/api/sites/${siteId}`, { method: 'DELETE' });
+        if (res.ok) {
+          window.location.href = '/dashboard';
+        } else {
+          alert('Failed to delete portfolio.');
+        }
+      });
+
+      document.getElementById('save-btn')?.addEventListener('click', async () => {
+        const res = await fetch(`/api/sites/${siteId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'save' }),
+        });
+        if (res.ok) {
+          const btn = document.getElementById('save-btn');
+          if (btn) {
+            btn.textContent = 'Saved!';
+            setTimeout(() => { btn.textContent = 'Save'; }, 1500);
+          }
+        }
+      });
+    </script>
+  </body>
+</html>

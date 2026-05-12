@@ -17,6 +17,14 @@
   let { id, name, slug, status, updatedAt, versions }: Props = $props();
 
   let showVersions = $state(false);
+
+  async function handleDelete() {
+    if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
+    const res = await fetch(`/api/sites/${id}`, { method: 'DELETE' });
+    if (res.ok) {
+      window.location.reload();
+    }
+  }
 </script>
 
 <div class="group rounded-lg border border-ash bg-stone/50 px-5 py-4 transition-colors duration-200 hover:bg-stone">
@@ -38,6 +46,13 @@
     </div>
 
     <div class="flex items-center gap-2">
+      <button
+        onclick={handleDelete}
+        class="rounded-md border border-ash px-3 py-1.5 text-xs text-graphite transition-colors hover:border-error/40 hover:text-error"
+        title="Delete portfolio"
+      >
+        Delete
+      </button>
       <button
         class="rounded-md border border-ash px-3 py-1.5 text-xs text-graphite transition-colors hover:border-amber/40 hover:text-ink"
         disabled
