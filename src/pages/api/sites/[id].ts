@@ -98,17 +98,31 @@ export const DELETE: APIRoute = async ({ params, locals }) => {
     return jsonResponse({ error: "Site not found" }, 404);
   }
 
-  // Delete in dependency order: blocks → zones → conversations → versions → site
+  // Gather IDs for cascading deletes
   const { results: zoneRows } = await db
     .prepare("SELECT id FROM zones WHERE site_id = ?")
     .bind(id)
     .all<{ id: string }>();
 
+  const { results: convRows } = await db
+    .prepare("SELECT id FROM ai_conversations WHERE site_id = ?")
+    .bind(id)
+    .all<{ id: string }>();
+
+  // Delete in FK dependency order: deepest refs first
   await db.batch([
-    ...zoneRows.map((zone) => db.prepare("DELETE FROM blocks WHERE zone_id = ?").bind(zone.id)),
+    // Agent metrics reference conversations
+    ...convRows.map((c) => db.prepare("DELETE FROM agent_metrics WHERE conversation_id = ?").bind(c.id)),
+    // Blocks reference zones
+    ...zoneRows.map((z) => db.prepare("DELETE FROM blocks WHERE zone_id = ?").bind(z.id)),
+    // Everything that references sites directly
     db.prepare("DELETE FROM zones WHERE site_id = ?").bind(id),
     db.prepare("DELETE FROM ai_conversations WHERE site_id = ?").bind(id),
     db.prepare("DELETE FROM versions WHERE site_id = ?").bind(id),
+    db.prepare("DELETE FROM analytics_events WHERE site_id = ?").bind(id),
+    db.prepare("DELETE FROM hosted_sites WHERE site_id = ?").bind(id),
+    db.prepare("DELETE FROM style_configs WHERE site_id = ?").bind(id),
+    // Finally the site itself
     db.prepare("DELETE FROM sites WHERE id = ?").bind(id),
   ]);
 

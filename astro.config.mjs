@@ -11,10 +11,16 @@ export default defineConfig({
     },
   }),
   output: "server",
+  security: {
+    checkOrigin: false,
+  },
   vite: {
     plugins: [tailwindcss()],
     ssr: {
       noExternal: ["svelte-sonner"],
+    },
+    optimizeDeps: {
+      exclude: ["zod", "better-auth", "markdown-it"],
     },
   },
 });

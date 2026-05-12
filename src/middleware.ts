@@ -14,6 +14,39 @@ function isPublicPath(pathname: string): boolean {
 // When auth is ready, remove this flag and the bypass branch below.
 const AUTH_BYPASS = true;
 
+const DEV_USER = {
+  id: "dev",
+  name: "Developer",
+  email: "dev@localhost",
+  emailVerified: true,
+  image: null,
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  customInstructions: "",
+};
+
+let devUserSeeded = false;
+
+async function ensureDevUser(db: D1Database) {
+  if (devUserSeeded) return;
+  try {
+    const existing = await db.prepare("SELECT id FROM user WHERE id = 'dev'").first();
+    if (!existing) {
+      await db
+        .prepare(
+          `INSERT INTO user (id, name, email, email_verified, created_at, updated_at)
+           VALUES ('dev', 'Developer', 'dev@localhost', 1, ?, ?)`,
+        )
+        .bind(Date.now(), Date.now())
+        .run();
+    }
+    devUserSeeded = true;
+  } catch (e) {
+    console.error("[Middleware] Failed to seed dev user:", e);
+    devUserSeeded = true;
+  }
+}
+
 export const onRequest = defineMiddleware(async (context, next) => {
   const { pathname } = context.url;
 
@@ -23,8 +56,15 @@ export const onRequest = defineMiddleware(async (context, next) => {
   });
 
   if (AUTH_BYPASS || isPublicPath(pathname)) {
-    context.locals.user = result?.user ?? null;
-    context.locals.session = result?.session ?? null;
+    if (AUTH_BYPASS && !result?.user) {
+      const db = (env as Env).DB;
+      await ensureDevUser(db);
+      context.locals.user = DEV_USER as any;
+      context.locals.session = null;
+    } else {
+      context.locals.user = result?.user ?? null;
+      context.locals.session = result?.session ?? null;
+    }
     return next();
   }
 
