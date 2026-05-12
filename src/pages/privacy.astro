@@ -1,0 +1,80 @@
+---
+export const prerender = true;
+
+import "@fontsource-variable/outfit";
+import "@fontsource-variable/lexend";
+import "@/styles/app.css";
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Privacy Policy — Portfolio Builder</title>
+  </head>
+  <body class="min-h-screen bg-cream font-body text-ink">
+    <nav class="mx-auto flex max-w-3xl items-center justify-between px-6 py-6">
+      <a href="/" class="font-display text-lg font-semibold tracking-tight text-ink">
+        Portfolio Builder
+      </a>
+      <a href="/login" class="text-sm text-graphite transition-colors hover:text-ink">
+        Sign in
+      </a>
+    </nav>
+
+    <main class="mx-auto max-w-3xl px-6 pb-16 pt-8">
+      <h1 class="font-display text-3xl font-bold tracking-tight">Privacy Policy</h1>
+      <p class="mt-4 text-graphite">Last updated: May 2026</p>
+
+      <div class="mt-10 space-y-8 text-graphite leading-relaxed">
+        <section>
+          <h2 class="font-display text-lg font-semibold text-ink">What we collect</h2>
+          <p class="mt-2">
+            When you sign in, we store your name, email address, and profile image from your Google account.
+            We also store the portfolios you create, including text, images, and project data you provide.
+          </p>
+        </section>
+
+        <section>
+          <h2 class="font-display text-lg font-semibold text-ink">How we use your data</h2>
+          <p class="mt-2">
+            Your data is used to provide the portfolio building service. We do not sell your data.
+            Conversation content is sent to AI providers (via OpenRouter) to power the Guide experience.
+          </p>
+        </section>
+
+        <section>
+          <h2 class="font-display text-lg font-semibold text-ink">Where your data lives</h2>
+          <p class="mt-2">
+            Data is stored on Cloudflare's infrastructure (D1 for structured data, R2 for files).
+            Published portfolios are served from Cloudflare's edge network.
+          </p>
+        </section>
+
+        <section>
+          <h2 class="font-display text-lg font-semibold text-ink">Your rights</h2>
+          <p class="mt-2">
+            You can export or delete your portfolio and account data at any time.
+            Contact us if you need help with data requests.
+          </p>
+        </section>
+
+        <section>
+          <h2 class="font-display text-lg font-semibold text-ink">Contact</h2>
+          <p class="mt-2">
+            Questions about privacy? Reach out at
+            <a href="mailto:privacy@portfoliobuilder.com" class="text-ink underline">privacy@portfoliobuilder.com</a>.
+          </p>
+        </section>
+      </div>
+    </main>
+
+    <footer class="mx-auto flex max-w-3xl items-center justify-between px-6 py-8">
+      <span class="text-sm text-graphite">&copy; {new Date().getFullYear()} Portfolio Builder</span>
+      <nav class="flex gap-6 text-sm text-graphite">
+        <a href="/privacy" class="text-ink font-medium">Privacy</a>
+        <a href="/terms" class="transition-colors hover:text-ink">Terms</a>
+      </nav>
+    </footer>
+  </body>
+</html>
