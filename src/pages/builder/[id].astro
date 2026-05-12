@@ -45,20 +45,24 @@ for (const zone of zoneRows) {
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>{site.name} — Portfolio Builder</title>
   </head>
   <body class="h-screen overflow-hidden bg-stone font-body text-ink">
+    <a href="#editor-canvas" class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-amber focus:px-4 focus:py-2 focus:text-ink focus:shadow-overlay">
+      Skip to editor
+    </a>
+
     <!-- Top bar -->
     <header class="flex h-12 items-center justify-between border-b border-ash bg-cream px-4">
       <div class="flex items-center gap-3">
         <a href="/dashboard" class="flex items-center gap-1.5 text-sm text-graphite transition-colors hover:text-ink">
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 256 256" fill="currentColor">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
             <path d="M224,128a8,8,0,0,1-8,8H59.31l58.35,58.34a8,8,0,0,1-11.32,11.32l-72-72a8,8,0,0,1,0-11.32l72-72a8,8,0,0,1,11.32,11.32L59.31,120H216A8,8,0,0,1,224,128Z"/>
           </svg>
           Dashboard
         </a>
-        <span class="text-ash">|</span>
+        <span class="text-ash" aria-hidden="true">|</span>
         <h1 class="truncate font-display text-sm font-semibold">{site.name}</h1>
         <span class="rounded-full px-2 py-0.5 text-[10px] font-medium leading-none {site.status === 'draft' ? 'bg-amber/10 text-amber-dim' : 'bg-success/10 text-success'}">
           {site.status === 'draft' ? 'Draft' : 'Live'}
@@ -66,18 +70,39 @@ for (const zone of zoneRows) {
       </div>
 
       <div class="flex items-center gap-2">
+        <span id="save-status" class="text-xs text-graphite" role="status" aria-live="polite"></span>
         <button
           id="save-btn"
-          class="rounded-md border border-ash px-3 py-1 text-xs text-graphite transition-colors hover:border-amber/40 hover:text-ink"
+          class="rounded-md bg-amber px-3 py-1 text-xs font-medium text-ink transition-all duration-200 hover:-translate-y-px hover:shadow-hover"
         >
           Save
         </button>
-        <button
-          id="delete-btn"
-          class="rounded-md border border-ash px-3 py-1 text-xs text-graphite transition-colors hover:border-error/40 hover:text-error"
-        >
-          Delete
-        </button>
+        <!-- Delete moved to overflow menu to prevent accidental clicks -->
+        <div class="relative">
+          <button
+            id="more-btn"
+            class="rounded-md border border-ash p-1 text-graphite transition-colors hover:border-amber/40 hover:text-ink"
+            aria-label="More actions"
+            aria-expanded="false"
+            aria-haspopup="true"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
+              <path d="M112,60a16,16,0,1,1,16,16A16,16,0,0,1,112,60Zm16,52a16,16,0,1,0,16,16A16,16,0,0,0,128,112Zm0,68a16,16,0,1,0,16,16A16,16,0,0,0,128,180Z"/>
+            </svg>
+          </button>
+          <div id="more-menu" class="absolute right-0 top-full z-10 mt-1 hidden w-40 rounded-lg border border-ash bg-cream py-1 shadow-overlay" role="menu">
+            <button
+              id="delete-btn"
+              class="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-error transition-colors hover:bg-stone"
+              role="menuitem"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
+                <path d="M216,48H176V40a24,24,0,0,0-24-24H104A24,24,0,0,0,80,40v8H40a8,8,0,0,0,0,16h8V208a16,16,0,0,0,16,16H192a16,16,0,0,0,16-16V64h8a8,8,0,0,0,0-16ZM96,40a8,8,0,0,1,8-8h48a8,8,0,0,1,8,8v8H96Zm96,168H64V64H192ZM112,104v64a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Zm48,0v64a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Z"/>
+              </svg>
+              Delete portfolio
+            </button>
+          </div>
+        </div>
       </div>
     </header>
 
@@ -87,7 +112,7 @@ for (const zone of zoneRows) {
       <ChatPanel client:only="svelte" isCollapsed={false} siteId={site.id} />
 
       <!-- Center: Editor canvas -->
-      <main class="flex-1 overflow-y-auto p-6">
+      <main id="editor-canvas" class="flex-1 overflow-y-auto p-6">
         <div class="mx-auto max-w-2xl space-y-4">
           {zoneRows.length === 0 ? (
             <div class="rounded-xl border-2 border-dashed border-ash px-8 py-16 text-center">
@@ -112,13 +137,13 @@ for (const zone of zoneRows) {
                     <h2 class="font-display text-sm font-semibold">{zone.label}</h2>
                   </div>
                   <div class="flex items-center gap-1">
-                    <button class="rounded p-1 text-graphite transition-colors hover:bg-stone hover:text-ink" title="Move up">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 256 256" fill="currentColor">
+                    <button class="rounded p-1 text-graphite transition-colors hover:bg-stone hover:text-ink" aria-label={`Move ${zone.label} section up`}>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
                         <path d="M213.66,165.66a8,8,0,0,1-11.32,0L128,91.31,53.66,165.66a8,8,0,0,1-11.32-11.32l80-80a8,8,0,0,1,11.32,0l80,80A8,8,0,0,1,213.66,165.66Z"/>
                       </svg>
                     </button>
-                    <button class="rounded p-1 text-graphite transition-colors hover:bg-stone hover:text-ink" title="Move down">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 256 256" fill="currentColor">
+                    <button class="rounded p-1 text-graphite transition-colors hover:bg-stone hover:text-ink" aria-label={`Move ${zone.label} section down`}>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
                         <path d="M213.66,101.66l-80,80a8,8,0,0,1-11.32,0l-80-80A8,8,0,0,1,53.66,90.34L128,164.69l74.34-74.35a8,8,0,0,1,11.32,11.32Z"/>
                       </svg>
                     </button>
@@ -136,9 +161,9 @@ for (const zone of zoneRows) {
                         <span class="rounded bg-amber/10 px-1.5 py-0.5 font-medium text-amber-dim">{block.type}</span>
                         <span class="text-graphite">Size: {block.size}</span>
                         <div class="ml-auto flex items-center gap-1">
-                          <button class="rounded p-0.5 text-graphite hover:text-ink" title="Move up">↑</button>
-                          <button class="rounded p-0.5 text-graphite hover:text-ink" title="Move down">↓</button>
-                          <button class="rounded p-0.5 text-graphite hover:text-error" title="Remove">×</button>
+                          <button class="rounded p-0.5 text-graphite hover:text-ink" aria-label="Move block up">↑</button>
+                          <button class="rounded p-0.5 text-graphite hover:text-ink" aria-label="Move block down">↓</button>
+                          <button class="rounded p-0.5 text-graphite hover:text-error" aria-label="Remove block">×</button>
                         </div>
                       </div>
                     ))}
@@ -164,30 +189,79 @@ for (const zone of zoneRows) {
       </aside>
     </div>
 
-    <script define:vars={{ siteId: site.id }}>
-      document.getElementById('delete-btn')?.addEventListener('click', async () => {
-        if (!confirm('Delete this portfolio? This cannot be undone.')) return;
+    <script define:vars={{ siteId: site.id, siteName: site.name }}>
+      const moreBtn = document.getElementById('more-btn');
+      const moreMenu = document.getElementById('more-menu');
+      const deleteBtn = document.getElementById('delete-btn');
+      const saveBtn = document.getElementById('save-btn');
+      const saveStatus = document.getElementById('save-status');
 
+      // Overflow menu toggle
+      moreBtn?.addEventListener('click', () => {
+        const expanded = moreBtn.getAttribute('aria-expanded') === 'true';
+        moreBtn.setAttribute('aria-expanded', String(!expanded));
+        moreMenu?.classList.toggle('hidden');
+      });
+
+      // Close menu when clicking outside
+      document.addEventListener('click', (e) => {
+        if (!moreBtn?.contains(e.target) && !moreMenu?.contains(e.target)) {
+          moreBtn?.setAttribute('aria-expanded', 'false');
+          moreMenu?.classList.add('hidden');
+        }
+      });
+
+      // Close menu on Escape
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          moreBtn?.setAttribute('aria-expanded', 'false');
+          moreMenu?.classList.add('hidden');
+          moreBtn?.focus();
+        }
+      });
+
+      // Delete with in-page confirmation
+      deleteBtn?.addEventListener('click', async () => {
+        moreMenu?.classList.add('hidden');
+        moreBtn?.setAttribute('aria-expanded', 'false');
+
+        // Replace confirm() with a safer two-step: first click opens menu, second confirms
+        if (!confirm(`Delete "${siteName}"? All content and versions will be permanently removed.`)) return;
+
+        if (saveStatus) saveStatus.textContent = 'Deleting...';
         const res = await fetch(`/api/sites/${siteId}`, { method: 'DELETE' });
         if (res.ok) {
           window.location.href = '/dashboard';
         } else {
-          alert('Failed to delete portfolio.');
+          if (saveStatus) saveStatus.textContent = 'Delete failed. Try again.';
+          setTimeout(() => { if (saveStatus) saveStatus.textContent = ''; }, 3000);
         }
       });
 
-      document.getElementById('save-btn')?.addEventListener('click', async () => {
+      // Save with aria-live feedback
+      saveBtn?.addEventListener('click', async () => {
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Saving...';
+        if (saveStatus) saveStatus.textContent = '';
+
         const res = await fetch(`/api/sites/${siteId}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ action: 'save' }),
         });
+
         if (res.ok) {
-          const btn = document.getElementById('save-btn');
-          if (btn) {
-            btn.textContent = 'Saved!';
-            setTimeout(() => { btn.textContent = 'Save'; }, 1500);
-          }
+          saveBtn.textContent = 'Saved';
+          if (saveStatus) saveStatus.textContent = 'All changes saved';
+          setTimeout(() => {
+            saveBtn.textContent = 'Save';
+            saveBtn.disabled = false;
+          }, 1500);
+        } else {
+          saveBtn.textContent = 'Save';
+          saveBtn.disabled = false;
+          if (saveStatus) saveStatus.textContent = 'Save failed. Try again.';
+          setTimeout(() => { if (saveStatus) saveStatus.textContent = ''; }, 3000);
         }
       });
     </script>

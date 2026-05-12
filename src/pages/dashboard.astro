@@ -60,10 +60,14 @@ function formatRelativeTime(timestamp: number): string {
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>Dashboard — Portfolio Builder</title>
   </head>
   <body class="min-h-screen bg-cream font-body text-ink">
+    <a href="#main-content" class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-amber focus:px-4 focus:py-2 focus:text-ink focus:shadow-overlay">
+      Skip to content
+    </a>
+
     <!-- Header -->
     <header class="border-b border-ash">
       <div class="mx-auto flex max-w-5xl items-center justify-between px-6 py-3">
@@ -89,7 +93,7 @@ function formatRelativeTime(timestamp: number): string {
     </header>
 
     <!-- Main content -->
-    <main class="mx-auto max-w-5xl px-6 pt-10 pb-16">
+    <main id="main-content" class="mx-auto max-w-5xl px-6 pt-10 pb-16">
       <div class="grid gap-12 lg:grid-cols-[1fr_280px]">
         <!-- Portfolios section -->
         <div>

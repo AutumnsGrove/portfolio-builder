@@ -9,11 +9,14 @@ import "@/styles/app.css";
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>Sign in — Portfolio Builder</title>
   </head>
   <body class="flex min-h-screen items-center justify-center bg-cream font-body text-ink">
-    <div class="w-full max-w-sm px-6">
+    <a href="#login-form" class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-amber focus:px-4 focus:py-2 focus:text-ink focus:shadow-overlay">
+      Skip to content
+    </a>
+    <main id="login-form" class="w-full max-w-sm px-6">
       <div class="text-center">
         <a href="/" class="inline-flex items-center gap-2">
           <div class="flex h-8 w-8 items-center justify-center rounded-md bg-amber/15">
@@ -60,6 +63,6 @@ import "@/styles/app.css";
         and
         <a href="/privacy" class="underline transition-colors hover:text-ink">Privacy Policy</a>.
       </p>
-    </div>
+    </main>
   </body>
 </html>

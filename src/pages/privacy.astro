@@ -9,11 +9,14 @@ import "@/styles/app.css";
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>Privacy Policy — Portfolio Builder</title>
   </head>
   <body class="min-h-screen bg-cream font-body text-ink">
-    <nav class="mx-auto flex max-w-3xl items-center justify-between px-6 py-6">
+    <a href="#main-content" class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-amber focus:px-4 focus:py-2 focus:text-ink focus:shadow-overlay">
+      Skip to content
+    </a>
+    <nav aria-label="Main navigation" class="mx-auto flex max-w-3xl items-center justify-between px-6 py-6">
       <a href="/" class="font-display text-lg font-semibold tracking-tight text-ink">
         Portfolio Builder
       </a>
@@ -22,7 +25,7 @@ import "@/styles/app.css";
       </a>
     </nav>
 
-    <main class="mx-auto max-w-3xl px-6 pb-16 pt-8">
+    <main id="main-content" class="mx-auto max-w-3xl px-6 pb-16 pt-8">
       <h1 class="font-display text-3xl font-bold tracking-tight">Privacy Policy</h1>
       <p class="mt-4 text-graphite">Last updated: May 2026</p>
 
@@ -71,7 +74,7 @@ import "@/styles/app.css";
 
     <footer class="mx-auto flex max-w-3xl items-center justify-between px-6 py-8">
       <span class="text-sm text-graphite">&copy; {new Date().getFullYear()} Portfolio Builder</span>
-      <nav class="flex gap-6 text-sm text-graphite">
+      <nav aria-label="Legal" class="flex gap-6 text-sm text-graphite">
         <a href="/privacy" class="text-ink font-medium">Privacy</a>
         <a href="/terms" class="transition-colors hover:text-ink">Terms</a>
       </nav>

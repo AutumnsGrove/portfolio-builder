@@ -32,6 +32,7 @@
     "better-auth-cloudflare": "^0.3.0",
     "bits-ui": "^2.18.0",
     "drizzle-orm": "^0.45.2",
+    "markdown-it": "^14.1.1",
     "phosphor-svelte": "^3.1.0",
     "svelte": "^5.55.5",
     "svelte-sonner": "^1.1.1",
@@ -40,6 +41,7 @@
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20260426.1",
+    "@types/markdown-it": "^14.1.2",
     "@types/node": "^25.7.0",
     "drizzle-kit": "^0.31.10",
     "eslint": "^10.2.1",

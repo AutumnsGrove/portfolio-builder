@@ -31,8 +31,13 @@ const icons = {
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   </head>
   <body class="bg-cream text-ink font-body antialiased">
+    <a href="#main-content" class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-amber focus:px-4 focus:py-2 focus:text-ink focus:shadow-overlay">
+      Skip to content
+    </a>
+
     <!-- Nav — sits on cream, outside the hero -->
     <nav
+      aria-label="Main navigation"
       class="mx-auto flex max-w-6xl items-center justify-between px-6 py-6 sm:px-8 lg:px-12"
     >
       <a
@@ -50,6 +55,7 @@ const icons = {
     </nav>
 
     <!-- Hero — Cream base, amber as a contained accent shape -->
+    <main id="main-content">
     <section class="overflow-hidden">
       <div
         class="mx-auto max-w-6xl px-6 pb-24 pt-12 sm:px-8 md:pb-32 md:pt-20 lg:px-12"
@@ -246,6 +252,8 @@ const icons = {
       </div>
     </section>
 
+    </main>
+
     <!-- Footer — Minimal -->
     <footer>
       <div
@@ -254,7 +262,7 @@ const icons = {
         <span class="text-sm text-graphite">
           &copy; {new Date().getFullYear()} Portfolio Builder
         </span>
-        <nav class="flex gap-6 text-sm text-graphite">
+        <nav aria-label="Legal" class="flex gap-6 text-sm text-graphite">
           <a href="/privacy" class="transition-colors hover:text-ink"
             >Privacy</a
           >

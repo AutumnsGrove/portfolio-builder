@@ -14,7 +14,7 @@
     <p class="text-lg text-graphite">{data.subheading}</p>
   {/if}
   {#if data.image}
-    <img src={data.image} alt={data.heading} class="mt-4 w-full rounded-lg object-cover" />
+    <img src={data.image} alt={`Hero image for ${data.heading}`} class="mt-4 w-full rounded-lg object-cover" />
   {/if}
   {#if data.cta}
     <a

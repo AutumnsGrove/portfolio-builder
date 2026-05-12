@@ -22,13 +22,14 @@ function jsonResponse(data: unknown, status = 200): Response {
   });
 }
 
-export const PATCH: APIRoute = async ({ params, request }) => {
+export const PATCH: APIRoute = async ({ params, request, locals }) => {
   const { id } = params;
   const db = (env as Env).DB;
+  const userId = locals.user?.id ?? "dev";
 
   const site = await db
-    .prepare("SELECT id FROM sites WHERE id = ?")
-    .bind(id)
+    .prepare("SELECT id FROM sites WHERE id = ? AND user_id = ?")
+    .bind(id, userId)
     .first();
 
   if (!site) {
@@ -83,13 +84,14 @@ export const PATCH: APIRoute = async ({ params, request }) => {
   return jsonResponse({ ok: true });
 };
 
-export const DELETE: APIRoute = async ({ params }) => {
+export const DELETE: APIRoute = async ({ params, locals }) => {
   const { id } = params;
   const db = (env as Env).DB;
+  const userId = locals.user?.id ?? "dev";
 
   const site = await db
-    .prepare("SELECT id FROM sites WHERE id = ?")
-    .bind(id)
+    .prepare("SELECT id FROM sites WHERE id = ? AND user_id = ?")
+    .bind(id, userId)
     .first();
 
   if (!site) {
