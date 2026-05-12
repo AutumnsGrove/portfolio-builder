@@ -1,0 +1,11 @@
+name: remove_block
+description: Remove a block from its zone. The block is permanently deleted.
+category: blocks
+parameters:
+  type: object
+  properties:
+    block_id:
+      type: string
+      description: UUID of the block to remove
+  required:
+    - block_id

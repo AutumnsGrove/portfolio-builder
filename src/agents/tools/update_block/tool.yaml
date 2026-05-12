@@ -1,0 +1,21 @@
+name: update_block
+description: Update an existing block's content, size, or style overrides. Provide the block ID and the fields to change.
+category: blocks
+parameters:
+  type: object
+  properties:
+    block_id:
+      type: string
+      description: UUID of the block to update
+    size:
+      type: string
+      description: New semantic size
+      enum: [S, M, L]
+    content:
+      type: object
+      description: New block content (replaces existing content)
+    style_overrides:
+      type: object
+      description: CSS style overrides as key-value pairs
+  required:
+    - block_id

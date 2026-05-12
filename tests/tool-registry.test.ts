@@ -57,9 +57,23 @@ describe("Tool Registry", () => {
   });
 
   describe("getDeferredTools", () => {
-    it("should return empty array for categories with no tools", () => {
+    it("should return block tools for the blocks category", () => {
       const tools = getDeferredTools(["blocks"]);
-      expect(tools).toEqual([]);
+      expect(tools).toHaveLength(4);
+      const names = tools.map((t) => t.name);
+      expect(names).toContain("add_block");
+      expect(names).toContain("update_block");
+      expect(names).toContain("remove_block");
+      expect(names).toContain("move_block");
+    });
+
+    it("should return zone tools for the zones category", () => {
+      const tools = getDeferredTools(["zones"]);
+      expect(tools).toHaveLength(3);
+      const names = tools.map((t) => t.name);
+      expect(names).toContain("add_zone");
+      expect(names).toContain("remove_zone");
+      expect(names).toContain("reorder_zones");
     });
 
     it("should not include hot tools", () => {
@@ -149,9 +163,11 @@ describe("Tool Registry", () => {
   describe("getRegisteredToolNames", () => {
     it("should return all registered tool names", () => {
       const names = getRegisteredToolNames();
-      expect(names).toHaveLength(6);
+      expect(names).toHaveLength(13);
       expect(names).toContain("think");
       expect(names).toContain("ask_user");
+      expect(names).toContain("add_block");
+      expect(names).toContain("add_zone");
     });
   });
 
@@ -159,6 +175,8 @@ describe("Tool Registry", () => {
     it("should count tools by category", () => {
       const counts = getToolCounts();
       expect(counts.hot).toBe(6);
+      expect(counts.blocks).toBe(4);
+      expect(counts.zones).toBe(3);
     });
   });
 });

@@ -1,0 +1,11 @@
+name: remove_zone
+description: Remove a zone and all its blocks from the portfolio. This is permanent.
+category: zones
+parameters:
+  type: object
+  properties:
+    zone_id:
+      type: integer
+      description: Numeric zone ID to remove
+  required:
+    - zone_id

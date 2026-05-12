@@ -1,0 +1,13 @@
+name: reorder_zones
+description: Set the display order of all zones by providing zone IDs in the desired order.
+category: zones
+parameters:
+  type: object
+  properties:
+    zone_ids:
+      type: array
+      description: Zone IDs in the desired display order
+      items:
+        type: integer
+  required:
+    - zone_ids

@@ -1,0 +1,18 @@
+name: move_block
+description: Move a block to a different position within its zone or to a different zone entirely. Specify direction (up/down) or a target zone.
+category: blocks
+parameters:
+  type: object
+  properties:
+    block_id:
+      type: string
+      description: UUID of the block to move
+    direction:
+      type: string
+      description: Move within current zone
+      enum: [up, down]
+    target_zone_id:
+      type: integer
+      description: Numeric zone ID to move the block to (moves to end of target zone)
+  required:
+    - block_id

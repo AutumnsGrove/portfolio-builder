@@ -1,0 +1,25 @@
+name: add_block
+description: Add a new block to a zone. Specify the zone ID, block type, size, and content. The block is appended to the end of the zone.
+category: blocks
+parameters:
+  type: object
+  properties:
+    zone_id:
+      type: integer
+      description: Numeric zone ID to add the block to
+    type:
+      type: string
+      description: Block type
+      enum: [hero, text, image, project-card, social-links, footer, spacer]
+    size:
+      type: string
+      description: Semantic size
+      enum: [S, M, L]
+    content:
+      type: object
+      description: Block content matching the type schema
+  required:
+    - zone_id
+    - type
+    - size
+    - content

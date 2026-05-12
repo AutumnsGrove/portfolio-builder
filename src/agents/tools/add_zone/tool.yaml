@@ -1,0 +1,11 @@
+name: add_zone
+description: Create a new zone in the portfolio. The zone is appended after existing zones. Provide a label like "Skills" or "Testimonials".
+category: zones
+parameters:
+  type: object
+  properties:
+    label:
+      type: string
+      description: Human-readable zone label (e.g. "Skills", "Experience")
+  required:
+    - label
