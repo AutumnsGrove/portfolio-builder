@@ -30,13 +30,7 @@ export const handler: ToolHandler<MoveBlockParams> = async (params, context) => 
       return { success: false, error: `Zone ${target_zone_id} not found` };
     }
 
-    // Close gap in source zone
-    await db
-      .prepare('UPDATE blocks SET "order" = "order" - 1 WHERE zone_id = ? AND "order" > ?')
-      .bind(block.zone_id, block.order)
-      .run();
-
-    // Append to target zone
+    // Append to target zone — read max order first, then batch the writes
     const maxOrder = await db
       .prepare('SELECT MAX("order") as max_order FROM blocks WHERE zone_id = ?')
       .bind(targetZone.id)
@@ -44,10 +38,12 @@ export const handler: ToolHandler<MoveBlockParams> = async (params, context) => 
 
     const newOrder = (maxOrder?.max_order ?? -1) + 1;
 
-    await db
-      .prepare('UPDATE blocks SET zone_id = ?, "order" = ?, updated_at = ? WHERE id = ?')
-      .bind(targetZone.id, newOrder, Date.now(), block_id)
-      .run();
+    await db.batch([
+      // Close gap in source zone
+      db.prepare('UPDATE blocks SET "order" = "order" - 1 WHERE zone_id = ? AND "order" > ?').bind(block.zone_id, block.order),
+      // Move block to target zone
+      db.prepare('UPDATE blocks SET zone_id = ?, "order" = ?, updated_at = ? WHERE id = ?').bind(targetZone.id, newOrder, Date.now(), block_id),
+    ]);
 
     return { success: true, data: { block_id, moved_to_zone: target_zone_id, order: newOrder } };
   }
@@ -69,8 +65,10 @@ export const handler: ToolHandler<MoveBlockParams> = async (params, context) => 
   }
 
   const now = Date.now();
-  await db.prepare('UPDATE blocks SET "order" = ?, updated_at = ? WHERE id = ?').bind(swapOrder, now, block_id).run();
-  await db.prepare('UPDATE blocks SET "order" = ?, updated_at = ? WHERE id = ?').bind(block.order, now, neighbor.id).run();
+  await db.batch([
+    db.prepare('UPDATE blocks SET "order" = ?, updated_at = ? WHERE id = ?').bind(swapOrder, now, block_id),
+    db.prepare('UPDATE blocks SET "order" = ?, updated_at = ? WHERE id = ?').bind(block.order, now, neighbor.id),
+  ]);
 
   return { success: true, data: { block_id, direction, new_order: swapOrder } };
 };

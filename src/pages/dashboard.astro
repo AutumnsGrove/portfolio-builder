@@ -30,17 +30,26 @@ if (user) {
     .all<{ id: string; name: string; slug: string; status: string; updated_at: number }>();
   sites = result.results;
 
-  for (const site of sites) {
-    const { results: versions } = await db
-      .prepare("SELECT id, name, created_at FROM versions WHERE site_id = ? ORDER BY created_at DESC LIMIT 10")
-      .bind(site.id)
-      .all<{ id: string; name: string; created_at: number }>();
+  const { results: allVersions } = await db
+    .prepare(`
+      SELECT v.id, v.site_id, v.name, v.created_at
+      FROM versions v
+      JOIN sites s ON v.site_id = s.id
+      WHERE s.user_id = ?
+      ORDER BY v.created_at DESC
+    `)
+    .bind(user.id)
+    .all<{ id: string; site_id: string; name: string; created_at: number }>();
 
-    siteVersions[site.id] = versions.map((v) => ({
-      id: v.id,
-      name: v.name,
-      createdAt: new Date(v.created_at).toLocaleDateString(),
-    }));
+  for (const v of allVersions) {
+    if (!siteVersions[v.site_id]) siteVersions[v.site_id] = [];
+    if (siteVersions[v.site_id].length < 10) {
+      siteVersions[v.site_id].push({
+        id: v.id,
+        name: v.name,
+        createdAt: new Date(v.created_at).toLocaleDateString(),
+      });
+    }
   }
 }
 

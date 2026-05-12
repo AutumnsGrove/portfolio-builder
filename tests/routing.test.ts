@@ -55,16 +55,20 @@ describe("Public path matching", () => {
 });
 
 /**
- * Route existence assertions.
- * These validate that the expected pages exist as files in the project.
- * A lightweight check that catches broken links before runtime.
+ * Page content validation.
+ * Reads page files and verifies they contain required structural elements,
+ * not just that they exist on disk.
  */
-import { existsSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import path from "node:path";
 
 const PAGES_DIR = path.resolve(__dirname, "../src/pages");
 
-describe("Required page routes exist", () => {
+function readPage(file: string): string {
+  return readFileSync(path.join(PAGES_DIR, file), "utf-8");
+}
+
+describe("Required pages have correct structure", () => {
   const requiredPages = [
     { route: "/", file: "index.astro" },
     { route: "/dashboard", file: "dashboard.astro" },
@@ -74,8 +78,35 @@ describe("Required page routes exist", () => {
   ];
 
   for (const { route, file } of requiredPages) {
-    it(`${route} → src/pages/${file} should exist`, () => {
-      expect(existsSync(path.join(PAGES_DIR, file))).toBe(true);
+    it(`${route} should have <html lang="en">`, () => {
+      expect(readPage(file)).toContain('<html lang="en">');
+    });
+
+    it(`${route} should have a <title>`, () => {
+      expect(readPage(file)).toMatch(/<title>.+<\/title>/);
+    });
+
+    it(`${route} should have viewport meta tag`, () => {
+      expect(readPage(file)).toContain('name="viewport"');
     });
   }
+});
+
+describe("Accessibility structure in pages", () => {
+  it("all pages should have skip-to-content links", () => {
+    const pages = ["index.astro", "dashboard.astro", "login.astro", "privacy.astro", "terms.astro"];
+    for (const file of pages) {
+      const content = readPage(file);
+      expect(content).toContain("Skip to");
+    }
+  });
+
+  it("privacy and terms should have <main> landmarks", () => {
+    expect(readPage("privacy.astro")).toContain("<main");
+    expect(readPage("terms.astro")).toContain("<main");
+  });
+
+  it("landing page nav should have aria-label", () => {
+    expect(readPage("index.astro")).toContain('aria-label="Main navigation"');
+  });
 });

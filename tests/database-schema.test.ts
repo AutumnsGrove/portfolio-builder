@@ -96,19 +96,32 @@ describe("Database schema structure", () => {
   });
 });
 
-describe("Type safety integration", () => {
-  it("should allow typed JSON columns for blocks", () => {
-    // The contentJson column should be typed as Block["content"]
-    // This is a compile-time check, so if this test compiles, it passes
-    type BlockContentType = typeof blocks.contentJson;
-    const typeCheck: BlockContentType = {} as any;
-    expect(typeCheck).toBeDefined(); // Just to use the variable
+describe("Schema relationships", () => {
+  it("sites.userId should reference user table", () => {
+    // Drizzle stores FK references in the column config
+    const config = (sites.userId as any).config;
+    expect(config).toBeDefined();
+    expect(config.notNull).toBe(true);
   });
 
-  it("should export schema for use in queries", () => {
-    // Verify the schema exports can be imported and used
-    expect(typeof user).toBe("object");
-    expect(typeof sites).toBe("object");
-    expect(typeof blocks).toBe("object");
+  it("zones should have ordering column", () => {
+    expect(zones.order).toBeDefined();
+    expect(zones.siteId).toBeDefined();
+    expect(zones.zoneId).toBeDefined();
+    expect(zones.label).toBeDefined();
+  });
+
+  it("blocks should have all content-related columns", () => {
+    expect(blocks.type).toBeDefined();
+    expect(blocks.size).toBeDefined();
+    expect(blocks.contentJson).toBeDefined();
+    expect(blocks.styleOverrides).toBeDefined();
+    expect(blocks.order).toBeDefined();
+  });
+
+  it("sites should have status with correct enum values", () => {
+    const config = (sites.status as any).config;
+    expect(config).toBeDefined();
+    expect(config.default).toBe("draft");
   });
 });

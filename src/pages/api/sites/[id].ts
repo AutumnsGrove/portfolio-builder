@@ -98,20 +98,19 @@ export const DELETE: APIRoute = async ({ params, locals }) => {
     return jsonResponse({ error: "Site not found" }, 404);
   }
 
-  // Delete in dependency order: blocks → zones → conversations → site
+  // Delete in dependency order: blocks → zones → conversations → versions → site
   const { results: zoneRows } = await db
     .prepare("SELECT id FROM zones WHERE site_id = ?")
     .bind(id)
     .all<{ id: string }>();
 
-  for (const zone of zoneRows) {
-    await db.prepare("DELETE FROM blocks WHERE zone_id = ?").bind(zone.id).run();
-  }
-
-  await db.prepare("DELETE FROM zones WHERE site_id = ?").bind(id).run();
-  await db.prepare("DELETE FROM ai_conversations WHERE site_id = ?").bind(id).run();
-  await db.prepare("DELETE FROM versions WHERE site_id = ?").bind(id).run();
-  await db.prepare("DELETE FROM sites WHERE id = ?").bind(id).run();
+  await db.batch([
+    ...zoneRows.map((zone) => db.prepare("DELETE FROM blocks WHERE zone_id = ?").bind(zone.id)),
+    db.prepare("DELETE FROM zones WHERE site_id = ?").bind(id),
+    db.prepare("DELETE FROM ai_conversations WHERE site_id = ?").bind(id),
+    db.prepare("DELETE FROM versions WHERE site_id = ?").bind(id),
+    db.prepare("DELETE FROM sites WHERE id = ?").bind(id),
+  ]);
 
   return jsonResponse({ ok: true });
 };

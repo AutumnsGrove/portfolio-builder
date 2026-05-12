@@ -3,7 +3,10 @@
  * ChatMessage — Individual message in the conversation.
  *
  * Displays user or assistant messages with appropriate styling.
+ * Assistant messages are rendered as markdown; user messages are plain text.
  */
+
+import MarkdownIt from "markdown-it";
 
 interface Message {
   id: string;
@@ -17,6 +20,11 @@ interface Props {
 }
 
 let { message }: Props = $props();
+
+const md = new MarkdownIt({ html: false, linkify: true, typographer: true });
+const renderedContent = $derived(
+  message.role === 'assistant' ? md.render(message.content) : null,
+);
 
 // Format timestamp
 const timeString = $derived.by(() => {
@@ -62,7 +70,11 @@ const timeString = $derived.by(() => {
       class:bg-ink={message.role === 'user'}
       class:text-cream={message.role === 'user'}
     >
-      {message.content}
+      {#if message.role === 'assistant' && renderedContent}
+        {@html renderedContent}
+      {:else}
+        {message.content}
+      {/if}
     </div>
     <span class="text-xs text-graphite">{timeString}</span>
   </div>

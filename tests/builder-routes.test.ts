@@ -6,32 +6,65 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { existsSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import path from "node:path";
 
 const PAGES_DIR = path.resolve(__dirname, "../src/pages");
 
-describe("Builder page routes exist", () => {
-  it("/builder/new → src/pages/builder/new.astro should exist", () => {
-    expect(existsSync(path.join(PAGES_DIR, "builder", "new.astro"))).toBe(true);
+function readPage(file: string): string {
+  return readFileSync(path.join(PAGES_DIR, file), "utf-8");
+}
+
+describe("Builder page routes", () => {
+  it("/builder/new should POST to /api/sites (not GET-mutate)", () => {
+    const content = readPage("builder/new.astro");
+    expect(content).toContain("fetch('/api/sites'");
+    expect(content).toContain("method: 'POST'");
+    // Should NOT have server-side INSERT statements
+    expect(content).not.toContain("INSERT INTO sites");
   });
 
-  it("/builder/[id] → src/pages/builder/[id].astro should exist", () => {
-    expect(existsSync(path.join(PAGES_DIR, "builder", "[id].astro"))).toBe(true);
+  it("/builder/[id] should load site data and have three-panel layout", () => {
+    const content = readPage("builder/[id].astro");
+    expect(content).toContain("SELECT id, name, slug, status");
+    expect(content).toContain("ChatPanel");
+    expect(content).toContain("editor-canvas");
+    expect(content).toContain("Live Preview");
+  });
+
+  it("/builder/[id] should have skip-to-content and aria-live", () => {
+    const content = readPage("builder/[id].astro");
+    expect(content).toContain("Skip to editor");
+    expect(content).toContain('aria-live="polite"');
+    expect(content).toContain('role="status"');
   });
 });
 
-describe("Site API route exists", () => {
-  it("POST /api/sites → src/pages/api/sites/index.ts should exist", () => {
-    expect(
-      existsSync(path.join(PAGES_DIR, "api", "sites", "index.ts")),
-    ).toBe(true);
+describe("Site API routes", () => {
+  it("POST /api/sites should validate input with Zod", () => {
+    const content = readFileSync(
+      path.join(PAGES_DIR, "api", "sites", "index.ts"),
+      "utf-8",
+    );
+    expect(content).toContain("CreateSiteSchema");
+    expect(content).toContain("safeParse");
   });
 
-  it("PATCH/DELETE /api/sites/[id] → src/pages/api/sites/[id].ts should exist", () => {
-    expect(
-      existsSync(path.join(PAGES_DIR, "api", "sites", "[id].ts")),
-    ).toBe(true);
+  it("PATCH/DELETE /api/sites/[id] should verify user ownership", () => {
+    const content = readFileSync(
+      path.join(PAGES_DIR, "api", "sites", "[id].ts"),
+      "utf-8",
+    );
+    expect(content).toContain("user_id = ?");
+    expect(content).toContain("locals.user");
+  });
+
+  it("DELETE /api/sites/[id] should use batch() for atomic deletion", () => {
+    const content = readFileSync(
+      path.join(PAGES_DIR, "api", "sites", "[id].ts"),
+      "utf-8",
+    );
+    expect(content).toContain("db.batch(");
   });
 });
 

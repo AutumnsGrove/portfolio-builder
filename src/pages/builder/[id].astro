@@ -33,12 +33,21 @@ const { results: zoneRows } = await db
 
 type BlockRow = { id: string; zone_id: string; order: number; type: string; size: string; content_json: string };
 const zoneBlocks: Record<string, BlockRow[]> = {};
-for (const zone of zoneRows) {
-  const { results: blockRows } = await db
-    .prepare('SELECT id, zone_id, "order", type, size, content_json FROM blocks WHERE zone_id = ? ORDER BY "order" ASC')
-    .bind(zone.id)
-    .all<BlockRow>();
-  zoneBlocks[zone.id] = blockRows;
+
+const { results: allBlockRows } = await db
+  .prepare(`
+    SELECT b.id, b.zone_id, b."order", b.type, b.size, b.content_json
+    FROM blocks b
+    JOIN zones z ON b.zone_id = z.id
+    WHERE z.site_id = ?
+    ORDER BY z."order" ASC, b."order" ASC
+  `)
+  .bind(id)
+  .all<BlockRow>();
+
+for (const block of allBlockRows) {
+  if (!zoneBlocks[block.zone_id]) zoneBlocks[block.zone_id] = [];
+  zoneBlocks[block.zone_id].push(block);
 }
 ---
 

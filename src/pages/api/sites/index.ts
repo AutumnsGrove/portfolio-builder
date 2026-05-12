@@ -53,15 +53,16 @@ export const POST: APIRoute = async ({ request, locals }) => {
     .run();
 
   const zones = getDefaultZones();
-  for (const zone of zones) {
-    await db
-      .prepare(
-        `INSERT INTO zones (id, site_id, zone_id, label, "order", created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      )
-      .bind(crypto.randomUUID(), siteId, zone.id, zone.label, zone.order, now, now)
-      .run();
-  }
+  await db.batch(
+    zones.map((zone) =>
+      db
+        .prepare(
+          `INSERT INTO zones (id, site_id, zone_id, label, "order", created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        )
+        .bind(crypto.randomUUID(), siteId, zone.id, zone.label, zone.order, now, now),
+    ),
+  );
 
   return jsonResponse({ id: siteId, name, slug }, 201);
 };

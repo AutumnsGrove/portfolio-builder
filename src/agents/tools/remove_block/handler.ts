@@ -17,13 +17,10 @@ export const handler: ToolHandler<RemoveBlockParams> = async (params, context) =
     return { success: false, error: `Block ${block_id} not found` };
   }
 
-  await db.prepare("DELETE FROM blocks WHERE id = ?").bind(block_id).run();
-
-  // Reorder remaining blocks to close the gap
-  await db
-    .prepare('UPDATE blocks SET "order" = "order" - 1 WHERE zone_id = ? AND "order" > ?')
-    .bind(block.zone_id, block.order)
-    .run();
+  await db.batch([
+    db.prepare("DELETE FROM blocks WHERE id = ?").bind(block_id),
+    db.prepare('UPDATE blocks SET "order" = "order" - 1 WHERE zone_id = ? AND "order" > ?').bind(block.zone_id, block.order),
+  ]);
 
   return { success: true, data: { removed: block_id } };
 };

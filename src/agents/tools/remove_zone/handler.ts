@@ -17,15 +17,11 @@ export const handler: ToolHandler<RemoveZoneParams> = async (params, context) =>
     return { success: false, error: `Zone ${zone_id} not found` };
   }
 
-  // Delete blocks in this zone first
-  await db.prepare("DELETE FROM blocks WHERE zone_id = ?").bind(zone.id).run();
-  await db.prepare("DELETE FROM zones WHERE id = ?").bind(zone.id).run();
-
-  // Reorder remaining zones
-  await db
-    .prepare('UPDATE zones SET "order" = "order" - 1 WHERE site_id = ? AND "order" > ?')
-    .bind(siteId, zone.order)
-    .run();
+  await db.batch([
+    db.prepare("DELETE FROM blocks WHERE zone_id = ?").bind(zone.id),
+    db.prepare("DELETE FROM zones WHERE id = ?").bind(zone.id),
+    db.prepare('UPDATE zones SET "order" = "order" - 1 WHERE site_id = ? AND "order" > ?').bind(siteId, zone.order),
+  ]);
 
   return { success: true, data: { removed_zone: zone_id } };
 };
